@@ -1,0 +1,2 @@
+# Defter
+Hesap defteri :)
