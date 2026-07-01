@@ -1,0 +1,71 @@
+// Defter — data model (SQLite via Prisma)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  displayName  String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  memberships  GroupMember[]
+  paidExpenses Expense[]      @relation("Payer")
+  shares       ExpenseShare[]
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("Tatil") // "Tatil" | "Girisim"
+  currency    String   @default("TRY")
+  createdById String
+  createdAt   DateTime @default(now())
+
+  members  GroupMember[]
+  expenses Expense[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  groupId     String
+  payerId     String
+  amount      Float
+  description String
+  category    String?
+  date        DateTime @default(now())
+  splitType   String   @default("Equal") // "Equal" | "Exact"
+  createdAt   DateTime @default(now())
+
+  group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payer  User           @relation("Payer", fields: [payerId], references: [id])
+  shares ExpenseShare[]
+}
+
+model ExpenseShare {
+  id        String @id @default(cuid())
+  expenseId String
+  userId    String
+  amount    Float
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+}

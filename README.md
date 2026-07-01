@@ -4,6 +4,16 @@ Arkadaş grubu tatilleri ve ortak girişimler için **ortak harcama paylaşım**
 Herkes kendi harcamalarını girer, harcamanın kimleri kapsadığını seçer; uygulama her
 harcamadan sonra **kim kime ne kadar borçlu** tablosunu otomatik olarak yeniden hesaplar.
 
+> ### İki uygulama
+> - **`web/`** — Modern, premium **Next.js + TypeScript + Tailwind + shadcn/ui**
+>   full-stack sürüm (Prisma + SQLite, Auth.js). Aktif geliştirilen arayüz.
+>   Kurulum için [`web/README.md`](web/README.md).
+> - **`src/Defter.Web/`** — Windows Service olarak çalışan ASP.NET Core (.NET 8)
+>   sürümü (aşağıda). SQLite + yerel giriş.
+
+---
+
+
 - **Backend/Web:** ASP.NET Core (.NET 8) MVC — Windows Service olarak çalışır.
 - **Veritabanı:** SQLite (tek dosya, `%ProgramData%\Defter\defter.db`).
 - **Kimlik doğrulama:** Yerel kullanıcı adı/parola (ASP.NET Core Identity, PBKDF2 hash). LDAP yok.
