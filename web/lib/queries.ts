@@ -3,6 +3,7 @@ import {
   calculateSettlement,
   type SettlementResult,
 } from "./settlement";
+import { materializeRecurring } from "./recurring";
 
 export type GroupWithData = Awaited<
   ReturnType<typeof loadUserGroups>
@@ -224,17 +225,49 @@ export type SettledItem = {
   createdAt: Date;
 };
 
+export type ActivityItem = {
+  id: string;
+  type: string;
+  summary: string;
+  actorName: string;
+  createdAt: Date;
+};
+
+export type RecurringItem = {
+  id: string;
+  description: string;
+  category: string | null;
+  amount: number;
+  interval: string;
+  nextRunAt: Date;
+  payerName: string;
+};
+
 export type GroupDetail = {
   group: GroupWithData;
   settlement: SettlementResult;
   total: number;
   settled: SettledItem[];
+  activities: ActivityItem[];
+  recurring: RecurringItem[];
+  monthSpend: number;
+  budget: number | null;
 };
 
 export async function getGroupDetail(
   groupId: string,
   userId: string,
 ): Promise<GroupDetail | null> {
+  // Confirm membership before doing any work (also gates materialization).
+  const membership = await prisma.groupMember.findFirst({
+    where: { groupId, userId },
+    select: { id: true },
+  });
+  if (!membership) return null;
+
+  // Create any due recurring occurrences before loading the group.
+  await materializeRecurring(groupId);
+
   const group = await prisma.group.findFirst({
     where: { id: groupId, members: { some: { userId } } },
     include: {
@@ -250,6 +283,12 @@ export async function getGroupDetail(
         orderBy: { createdAt: "desc" },
         include: { fromUser: true, toUser: true },
       },
+      activities: {
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        include: { actor: true },
+      },
+      recurring: { orderBy: { nextRunAt: "asc" } },
     },
   });
   if (!group) return null;
@@ -265,11 +304,42 @@ export async function getGroupDetail(
     createdAt: p.createdAt,
   }));
 
+  const activities: ActivityItem[] = group.activities.map((a) => ({
+    id: a.id,
+    type: a.type,
+    summary: a.summary,
+    actorName: a.actor.displayName ?? a.actor.username,
+    createdAt: a.createdAt,
+  }));
+
+  const nameById = new Map(
+    group.members.map((m) => [m.userId, m.user.displayName ?? m.user.username]),
+  );
+  const recurring: RecurringItem[] = group.recurring.map((r) => ({
+    id: r.id,
+    description: r.description,
+    category: r.category,
+    amount: r.amount,
+    interval: r.interval,
+    nextRunAt: r.nextRunAt,
+    payerName: nameById.get(r.payerId) ?? "—",
+  }));
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthSpend = group.expenses
+    .filter((e) => new Date(e.date) >= monthStart)
+    .reduce((s, e) => s + e.amount, 0);
+
   return {
     group,
     settlement: settlementFor(group),
     total: groupTotal(group),
     settled,
+    activities,
+    recurring,
+    monthSpend,
+    budget: group.monthlyBudget ?? null,
   };
 }
 

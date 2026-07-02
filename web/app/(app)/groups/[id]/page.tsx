@@ -16,6 +16,11 @@ import { AddExpenseDialog } from "@/components/groups/add-expense-dialog";
 import { AddMemberForm } from "@/components/groups/add-member-form";
 import { InviteButton } from "@/components/groups/invite-button";
 import { ExpenseList } from "@/components/groups/expense-list";
+import { ActivityFeed } from "@/components/groups/activity-feed";
+import { LiveRefresh } from "@/components/groups/live-refresh";
+import { BudgetCard } from "@/components/groups/budget-card";
+import { RatioEditor } from "@/components/groups/ratio-editor";
+import { RecurringSection } from "@/components/groups/recurring-section";
 
 export const metadata: Metadata = { title: "Grup" };
 
@@ -29,8 +34,10 @@ export default async function GroupDetailPage({
   const detail = await getGroupDetail(params.id, userId);
   if (!detail) notFound();
 
-  const { group, settlement, total, settled } = detail;
+  const { group, settlement, total, settled, activities, recurring, monthSpend, budget } =
+    detail;
   const isVenture = group.type === "Girisim";
+  const isOwner = group.createdById === userId;
   const Icon = isVenture ? Rocket : Plane;
 
   const members = group.members.map((m) => ({
@@ -86,6 +93,10 @@ export default async function GroupDetailPage({
 
   return (
     <div className="space-y-6">
+      <LiveRefresh
+        groupId={group.id}
+        initialVersion={activities[0]?.createdAt.getTime() ?? 0}
+      />
       <Link
         href="/groups"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -119,6 +130,7 @@ export default async function GroupDetailPage({
           currency={group.currency}
           members={members}
           currentUserId={userId}
+          groupType={group.type}
         />
       </div>
 
@@ -187,6 +199,18 @@ export default async function GroupDetailPage({
 
         {/* Side column */}
         <div className="space-y-4">
+          <Reveal delay={0.08}>
+            <SectionCard title="Bütçe" description="Aylık harcama takibi">
+              <BudgetCard
+                groupId={group.id}
+                currency={group.currency}
+                monthSpend={monthSpend}
+                budget={budget}
+                isOwner={isOwner}
+              />
+            </SectionCard>
+          </Reveal>
+
           <Reveal delay={0.1}>
             <SectionCard title="Net Bakiyeler" description="Kim ne durumda">
               <BalanceList
@@ -194,6 +218,43 @@ export default async function GroupDetailPage({
                 currency={group.currency}
                 currentUserId={userId}
               />
+            </SectionCard>
+          </Reveal>
+
+          {isVenture && (
+            <Reveal delay={0.12}>
+              <SectionCard
+                title="Ortaklık Oranları"
+                description="Oranla bölüşüm için pay ağırlıkları"
+              >
+                <RatioEditor
+                  groupId={group.id}
+                  isOwner={isOwner}
+                  members={group.members.map((m) => ({
+                    userId: m.userId,
+                    name: m.user.displayName ?? m.user.username,
+                    ratio: m.shareRatio ?? null,
+                  }))}
+                />
+              </SectionCard>
+            </Reveal>
+          )}
+
+          <Reveal delay={0.13}>
+            <SectionCard title="Tekrarlayan" description="Düzenli giderler">
+              <RecurringSection
+                groupId={group.id}
+                currency={group.currency}
+                items={recurring}
+                members={members}
+                currentUserId={userId}
+              />
+            </SectionCard>
+          </Reveal>
+
+          <Reveal delay={0.14}>
+            <SectionCard title="Hareketler" description="Son aktiviteler">
+              <ActivityFeed items={activities} />
             </SectionCard>
           </Reveal>
 

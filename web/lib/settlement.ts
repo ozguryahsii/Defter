@@ -140,3 +140,37 @@ export function equalShares(
     amount: (base + (idx < remainder ? 1 : 0)) / 100,
   }));
 }
+
+/**
+ * Splits a total by ownership ratio (weights), distributing leftover pennies to
+ * the largest fractional remainders so the shares sum exactly to the amount.
+ * Falls back to an equal split when no positive weights are given.
+ */
+export function ratioShares(
+  amount: number,
+  participants: { userId: string; ratio: number }[],
+): { userId: string; amount: number }[] {
+  if (participants.length === 0) return [];
+  const weightSum = participants.reduce((s, p) => s + (p.ratio > 0 ? p.ratio : 0), 0);
+  if (weightSum <= 0) {
+    return equalShares(
+      amount,
+      participants.map((p) => p.userId),
+    );
+  }
+
+  const totalCents = Math.round(amount * 100);
+  let allocated = 0;
+  const parts = participants.map((p) => {
+    const exact = (totalCents * (p.ratio > 0 ? p.ratio : 0)) / weightSum;
+    const cents = Math.floor(exact);
+    allocated += cents;
+    return { userId: p.userId, cents, frac: exact - cents };
+  });
+
+  const remainder = totalCents - allocated;
+  parts.sort((a, b) => b.frac - a.frac);
+  for (let i = 0; i < remainder; i++) parts[i % parts.length].cents += 1;
+
+  return parts.map((p) => ({ userId: p.userId, amount: p.cents / 100 }));
+}

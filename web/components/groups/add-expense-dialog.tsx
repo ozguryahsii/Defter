@@ -50,6 +50,7 @@ export function AddExpenseDialog({
   currentUserId,
   expense,
   trigger,
+  groupType = "Tatil",
 }: {
   groupId: string;
   currency: string;
@@ -57,9 +58,11 @@ export function AddExpenseDialog({
   currentUserId: string;
   expense?: EditExpenseInit;
   trigger?: React.ReactNode;
+  groupType?: string;
 }) {
   const router = useRouter();
   const isEdit = !!expense;
+  const isVenture = groupType === "Girisim";
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -70,7 +73,7 @@ export function AddExpenseDialog({
   const [date, setDate] = useState(
     expense?.date ?? new Date().toISOString().slice(0, 10),
   );
-  const [splitType, setSplitType] = useState<"Equal" | "Exact">(
+  const [splitType, setSplitType] = useState<"Equal" | "Exact" | "Ratio">(
     expense?.splitType ?? "Equal",
   );
   const [participants, setParticipants] = useState<string[]>(
@@ -154,7 +157,7 @@ export function AddExpenseDialog({
           amount: numericAmount,
           payerId,
           date,
-          splitType,
+          splitType: splitType === "Ratio" ? "Equal" : splitType,
           participantIds: participants,
           exactAmounts,
         })
@@ -320,8 +323,16 @@ export function AddExpenseDialog({
           {/* Split type toggle */}
           <div className="space-y-2">
             <Label>Bölüşüm</Label>
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-muted/40 p-1">
-              {(["Equal", "Exact"] as const).map((t) => (
+            <div
+              className={cn(
+                "grid gap-2 rounded-xl border border-border/60 bg-muted/40 p-1",
+                isVenture && !isEdit ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
+              {(isVenture && !isEdit
+                ? (["Equal", "Exact", "Ratio"] as const)
+                : (["Equal", "Exact"] as const)
+              ).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -333,10 +344,20 @@ export function AddExpenseDialog({
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {t === "Equal" ? "Eşit böl" : "Özel tutarlar"}
+                  {t === "Equal"
+                    ? "Eşit böl"
+                    : t === "Exact"
+                      ? "Özel tutarlar"
+                      : "Oranla böl"}
                 </button>
               ))}
             </div>
+            {splitType === "Ratio" && (
+              <p className="text-xs text-muted-foreground">
+                Ortaklık oranlarına göre bölüşülür. Oranları üyeler kartından
+                grup sahibi belirler.
+              </p>
+            )}
           </div>
 
           {/* Participants */}

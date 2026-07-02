@@ -6,9 +6,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { randomBytes } from "crypto";
-import { equalShares, calculateSettlement } from "./settlement";
+import { equalShares, ratioShares, calculateSettlement } from "./settlement";
 import { logActivity } from "./activity";
 import { saveReceipt } from "./uploads";
+import { materializeRecurring } from "./recurring";
 
 export type ActionState = {
   ok: boolean;
@@ -155,7 +156,7 @@ export async function addExpense(input: {
   amount: number; // in group currency
   payerId: string;
   date: string;
-  splitType: "Equal" | "Exact";
+  splitType: "Equal" | "Exact" | "Ratio";
   participantIds: string[];
   exactAmounts?: Record<string, number>;
   // Optional multi-currency record: what was originally entered.
@@ -199,6 +200,17 @@ export async function addExpense(input: {
         ok: false,
         error: `Payların toplamı (${sum.toFixed(2)}) tutara (${amount.toFixed(2)}) eşit olmalı.`,
       };
+  } else if (input.splitType === "Ratio") {
+    const ratioById = new Map(
+      group.members.map((m) => [m.userId, m.shareRatio ?? 0]),
+    );
+    shares = ratioShares(
+      amount,
+      participants.map((userId) => ({
+        userId,
+        ratio: ratioById.get(userId) ?? 0,
+      })),
+    );
   } else {
     shares = equalShares(amount, participants);
   }
@@ -625,4 +637,157 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
 
   revalidatePath(`/groups/${invite.groupId}`);
   return { ok: true, groupId: invite.groupId };
+}
+
+// ---------------------------------------------------------------------------
+// Venture (Girisim) ownership ratios — owner only
+// ---------------------------------------------------------------------------
+export async function setShareRatios(
+  groupId: string,
+  ratios: Record<string, number>,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { members: true },
+  });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.createdById !== session.user.id)
+    return { ok: false, error: "Oranları yalnızca grup sahibi belirleyebilir." };
+
+  await prisma.$transaction(
+    group.members.map((m) => {
+      const r = ratios[m.userId];
+      return prisma.groupMember.update({
+        where: { id: m.id },
+        data: { shareRatio: Number.isFinite(r) && r > 0 ? r : null },
+      });
+    }),
+  );
+
+  revalidatePath(`/groups/${groupId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Monthly budget — owner only
+// ---------------------------------------------------------------------------
+export async function setBudget(
+  groupId: string,
+  amount: number | null,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.createdById !== session.user.id)
+    return { ok: false, error: "Bütçeyi yalnızca grup sahibi belirleyebilir." };
+
+  const value =
+    amount != null && Number.isFinite(amount) && amount > 0
+      ? Math.round(amount * 100) / 100
+      : null;
+
+  await prisma.group.update({
+    where: { id: groupId },
+    data: { monthlyBudget: value },
+  });
+
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "budget.set",
+    summary: value ? `Aylık bütçe ${value.toFixed(2)} olarak ayarlandı` : "Aylık bütçe kaldırıldı",
+  });
+
+  revalidatePath(`/groups/${groupId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Recurring expense templates
+// ---------------------------------------------------------------------------
+export async function addRecurring(input: {
+  groupId: string;
+  description: string;
+  category?: string;
+  amount: number;
+  payerId: string;
+  interval: "weekly" | "monthly";
+  startDate: string;
+  participantIds: string[];
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const group = await prisma.group.findFirst({
+    where: { id: input.groupId, members: { some: { userId: session.user.id } } },
+    include: { members: true },
+  });
+  if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+
+  const memberIds = new Set(group.members.map((m) => m.userId));
+  const participants = [...new Set(input.participantIds)].filter((id) =>
+    memberIds.has(id),
+  );
+  const amount = Math.round(input.amount * 100) / 100;
+  if (!input.description.trim()) return { ok: false, error: "Açıklama gerekli." };
+  if (!Number.isFinite(amount) || amount <= 0)
+    return { ok: false, error: "Tutar 0'dan büyük olmalı." };
+  if (!memberIds.has(input.payerId))
+    return { ok: false, error: "Ödeyen grup üyesi olmalı." };
+  if (participants.length === 0)
+    return { ok: false, error: "En az bir katılımcı seçmelisiniz." };
+
+  const start = new Date(input.startDate);
+  if (Number.isNaN(start.getTime()))
+    return { ok: false, error: "Geçersiz başlangıç tarihi." };
+
+  await prisma.recurringExpense.create({
+    data: {
+      groupId: input.groupId,
+      description: input.description.trim(),
+      category: input.category?.trim() || null,
+      amount,
+      payerId: input.payerId,
+      splitType: "Equal",
+      participantIds: JSON.stringify(participants),
+      interval: input.interval,
+      nextRunAt: start,
+    },
+  });
+
+  await logActivity({
+    groupId: input.groupId,
+    actorId: session.user.id,
+    type: "recurring.add",
+    summary: `Tekrarlayan harcama eklendi: "${input.description.trim()}"`,
+  });
+
+  // Materialize immediately if the start date is already due.
+  await materializeRecurring(input.groupId);
+
+  revalidatePath(`/groups/${input.groupId}`);
+  return { ok: true };
+}
+
+export async function deleteRecurring(id: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const tpl = await prisma.recurringExpense.findUnique({
+    where: { id },
+    include: { group: { include: { members: true } } },
+  });
+  if (!tpl || !tpl.group.members.some((m) => m.userId === session.user.id))
+    return { ok: false, error: "Kayıt bulunamadı." };
+  if (tpl.payerId !== session.user.id && tpl.group.createdById !== session.user.id)
+    return { ok: false, error: "Bunu silme yetkiniz yok." };
+
+  await prisma.recurringExpense.delete({ where: { id } });
+  revalidatePath(`/groups/${tpl.groupId}`);
+  return { ok: true };
 }
