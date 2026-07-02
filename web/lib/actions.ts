@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { equalShares, calculateSettlement } from "./settlement";
+import { logActivity } from "./activity";
 
 export type ActionState = {
   ok: boolean;
@@ -95,6 +96,13 @@ export async function createGroup(
     },
   });
 
+  await logActivity({
+    groupId: group.id,
+    actorId: session.user.id,
+    type: "group.create",
+    summary: `"${group.name}" grubu oluşturuldu`,
+  });
+
   revalidatePath("/groups");
   revalidatePath("/dashboard");
   return { ok: true, groupId: group.id };
@@ -124,6 +132,12 @@ export async function addMember(
   if (already) return { ok: false, error: `'${name}' zaten grupta.` };
 
   await prisma.groupMember.create({ data: { groupId, userId: user.id } });
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "member.add",
+    summary: `${user.displayName ?? user.username} gruba eklendi`,
+  });
   revalidatePath(`/groups/${groupId}`);
   return { ok: true };
 }
@@ -182,7 +196,7 @@ export async function addExpense(input: {
     shares = equalShares(amount, participants);
   }
 
-  await prisma.expense.create({
+  const created = await prisma.expense.create({
     data: {
       groupId: input.groupId,
       payerId: input.payerId,
@@ -193,6 +207,14 @@ export async function addExpense(input: {
       splitType: input.splitType,
       shares: { create: shares },
     },
+  });
+
+  await logActivity({
+    groupId: input.groupId,
+    actorId: session.user.id,
+    type: "expense.add",
+    summary: `"${created.description}" harcaması eklendi`,
+    meta: { amount, expenseId: created.id },
   });
 
   revalidatePath(`/groups/${input.groupId}`);
@@ -223,6 +245,12 @@ export async function deleteExpense(
     return { ok: false, error: "Bu harcamayı silme yetkiniz yok." };
 
   await prisma.expense.delete({ where: { id: expenseId } });
+  await logActivity({
+    groupId: expense.groupId,
+    actorId: session.user.id,
+    type: "expense.delete",
+    summary: `"${expense.description}" harcaması silindi`,
+  });
   revalidatePath(`/groups/${expense.groupId}`);
   revalidatePath("/dashboard");
   return { ok: true };
@@ -302,6 +330,14 @@ export async function settleTransfer(
     },
   });
 
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "settle",
+    summary: `${transfer.fromUserName} → ${transfer.toUserName}: ödeme alındı (${transfer.amount.toFixed(2)})`,
+    meta: { fromUserId, toUserId, amount: transfer.amount },
+  });
+
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
   return { ok: true };
@@ -319,6 +355,7 @@ export async function unsettleTransfer(
 
   const settlement = await prisma.settlement.findUnique({
     where: { id: settlementId },
+    include: { fromUser: true, toUser: true },
   });
   if (!settlement) return { ok: false, error: "Kayıt bulunamadı." };
 
@@ -329,6 +366,12 @@ export async function unsettleTransfer(
     };
 
   await prisma.settlement.delete({ where: { id: settlementId } });
+  await logActivity({
+    groupId: settlement.groupId,
+    actorId: session.user.id,
+    type: "unsettle",
+    summary: `${settlement.fromUser.displayName ?? settlement.fromUser.username} → ${settlement.toUser.displayName ?? settlement.toUser.username} ödemesi geri alındı`,
+  });
   revalidatePath(`/groups/${settlement.groupId}`);
   revalidatePath("/dashboard");
   return { ok: true };

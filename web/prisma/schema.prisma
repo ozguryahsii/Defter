@@ -15,11 +15,16 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
+  // Payment details for settlements (IBAN / QR).
+  iban     String?
+  ibanName String?
+
   memberships     GroupMember[]
   paidExpenses    Expense[]      @relation("Payer")
   shares          ExpenseShare[]
   settlementsFrom Settlement[]   @relation("SettlementFrom")
   settlementsTo   Settlement[]   @relation("SettlementTo")
+  activities      Activity[]     @relation("ActivityActor")
 }
 
 model Group {
@@ -30,9 +35,15 @@ model Group {
   createdById String
   createdAt   DateTime @default(now())
 
+  // Optional monthly spending budget for the group.
+  monthlyBudget Float?
+
   members     GroupMember[]
   expenses    Expense[]
   settlements Settlement[]
+  invites     Invite[]
+  activities  Activity[]
+  recurring   RecurringExpense[]
 }
 
 model GroupMember {
@@ -40,6 +51,9 @@ model GroupMember {
   groupId  String
   userId   String
   joinedAt DateTime @default(now())
+
+  // Ownership ratio for "Girisim" (venture) groups. Null => treated as equal.
+  shareRatio Float?
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id])
@@ -51,12 +65,24 @@ model Expense {
   id          String   @id @default(cuid())
   groupId     String
   payerId     String
-  amount      Float
+  amount      Float // amount in the group's currency
   description String
   category    String?
   date        DateTime @default(now())
-  splitType   String   @default("Equal") // "Equal" | "Exact"
+  splitType   String   @default("Equal") // "Equal" | "Exact" | "Ratio"
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Receipt photo (stored on disk, served via authenticated API route).
+  receiptPath String?
+
+  // Multi-currency: what was originally entered, converted to group currency.
+  originalAmount   Float?
+  originalCurrency String?
+  fxRate           Float? // multiply original by this to get group currency
+
+  // Link back to the recurring template that produced this expense, if any.
+  recurringId String?
 
   group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   payer  User           @relation("Payer", fields: [payerId], references: [id])
@@ -82,12 +108,65 @@ model Settlement {
   fromUserId    String // debtor who pays
   toUserId      String // creditor who receives + confirms
   amount        Float
+  method        String? // "IBAN" | "Nakit" | "Diğer"
+  note          String?
   confirmedById String // who marked it paid — always the creditor (toUserId)
   createdAt     DateTime @default(now())
 
   group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   fromUser User  @relation("SettlementFrom", fields: [fromUserId], references: [id])
   toUser   User  @relation("SettlementTo", fields: [toUserId], references: [id])
+
+  @@index([groupId])
+}
+
+// Group activity feed + audit log (one row per meaningful action).
+model Activity {
+  id        String   @id @default(cuid())
+  groupId   String
+  actorId   String
+  type      String // "expense.add" | "expense.edit" | "expense.delete" | "settle" | "unsettle" | "member.add" | "member.join" | "group.create" | "budget.set" | "recurring.add" | "recurring.run"
+  summary   String
+  meta      String? // optional JSON payload
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  actor User  @relation("ActivityActor", fields: [actorId], references: [id])
+
+  @@index([groupId, createdAt])
+}
+
+// Shareable invite link to join a group without knowing the exact username.
+model Invite {
+  id          String    @id @default(cuid())
+  groupId     String
+  token       String    @unique
+  createdById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  maxUses     Int?
+  uses        Int       @default(0)
+  active      Boolean   @default(true)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// Template for a recurring expense; occurrences are materialized lazily.
+model RecurringExpense {
+  id             String   @id @default(cuid())
+  groupId        String
+  description    String
+  category       String?
+  amount         Float
+  payerId        String
+  splitType      String   @default("Equal")
+  participantIds String // JSON array of userIds
+  interval       String // "weekly" | "monthly"
+  nextRunAt      DateTime
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([groupId])
 }
