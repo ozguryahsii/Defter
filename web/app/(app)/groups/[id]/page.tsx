@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Plane, Rocket, Users, Wallet } from "lucide-react";
+import { ArrowLeft, FileText, Plane, Rocket, Users, Wallet } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getGroupDetail } from "@/lib/queries";
 import { formatCurrency, formatDate, initials } from "@/lib/format";
@@ -125,13 +125,21 @@ export default async function GroupDetailPage({
             </div>
           </div>
         </div>
-        <AddExpenseDialog
-          groupId={group.id}
-          currency={group.currency}
-          members={members}
-          currentUserId={userId}
-          groupType={group.type}
-        />
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/groups/${group.id}/report`}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border/60 px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <FileText className="h-4 w-4" /> Rapor
+          </Link>
+          <AddExpenseDialog
+            groupId={group.id}
+            currency={group.currency}
+            members={members}
+            currentUserId={userId}
+            groupType={group.type}
+          />
+        </div>
       </div>
 
       {/* Summary strip */}

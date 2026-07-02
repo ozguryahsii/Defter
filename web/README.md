@@ -12,8 +12,22 @@ full-stack Next.js uygulaması içinde.
   (spotlight kart, number ticker, aurora arka plan)
 - **Recharts** (KPI, alan/çubuk/donut grafikleri)
 - **Lucide** ikonları
-- **Prisma + SQLite** (yerel veritabanı)
+- **Prisma + SQLite** (yerel veritabanı, migration ile yönetilir)
 - **Auth.js (NextAuth)** — yerel kullanıcı adı/parola girişi (bcrypt hash)
+
+## Özellikler
+
+- Gruplar (Tatil / Girişim), üye ekleme (kullanıcı adı **veya davet linki**)
+- Harcama ekle / **düzenle** / sil; **eşit**, **özel** veya (girişim) **oranla** bölüşüm
+- **Çoklu para birimi** + kur ile grup para birimine çevirme
+- **Fiş fotoğrafı** ekleme (yetki kontrollü servis)
+- Canlı **borç tablosu** + minimum transferle ödeşme planı
+- **Ödendi (settlement):** yalnızca alacaklı onaylar; **IBAN + QR** ile ödeme
+- **Ortaklık oranı** (girişim), **aylık bütçe** + aşım uyarısı
+- **Tekrarlayan harcamalar** (kira/abonelik → otomatik oluşur)
+- **Aktivite/denetim akışı** ve **anlık güncelleme** (websocket'siz)
+- **Dışa aktarma:** CSV indirme + yazdırılabilir **PDF rapor**
+- **PWA** (telefona kurulabilir), dark-mode öncelikli premium arayüz
 
 ## Gereksinimler
 
@@ -65,7 +79,10 @@ parola:    demo12345
 | `npm run dev` | Geliştirme sunucusu |
 | `npm run build` | Production derleme |
 | `npm run start` | Production sunucusu |
-| `npm run db:push` | Prisma şemasını SQLite'a uygula |
+| `npm test` | Hesaplama motoru birim testleri |
+| `npm run db:migrate` | Bekleyen migration'ları uygula (production) |
+| `npm run db:migrate:dev` | Yeni migration oluştur/uygula (geliştirme) |
+| `npm run db:push` | Şemayı doğrudan uygula (hızlı prototip) |
 | `npm run db:seed` | Örnek veriyi yükle |
 | `npm run db:reset` | Şemayı sıfırla + yeniden seed |
 | `npm run db:fresh` | Şemayı sıfırla, **boş** başla (seed yok) |
@@ -93,14 +110,20 @@ sunucunun adresine göre ayarla (örn. `http://192.168.1.20:3000`).
 
 ### 2. Veritabanını hazırla
 
+Artık şema değişiklikleri **Prisma migration** ile yönetilir (veri kaybı olmadan):
+
 ```powershell
-npm run db:push      # şemayı kur
-# Sıfırdan, boş (demo verisi olmadan) başlamak istersen:
-npm run db:fresh
+npm run db:migrate   # repodaki migration'ları uygular (mevcut veriyi korur)
 ```
 
-> Veri kalıcıdır: `web/prisma/dev.db` dosyasında tutulur. Yedeklemek için bu
-> dosyayı kopyalaman yeterli.
+> **İlk kez migration'a geçiş:** Daha önce `db:push` ile oluşturduğun bir
+> veritabanın varsa ve test verisini korumak istemiyorsan tek seferlik
+> `npx prisma migrate reset --force` çalıştır (verileri siler, tüm
+> migration'ları uygular). Sonraki güncellemelerde sadece `npm run db:migrate`
+> yeterli ve veriyi korur.
+
+> Veri kalıcıdır: `web/prisma/dev.db` dosyasında tutulur. Fiş görselleri
+> `web/data/receipts` altında. Yedeklemek için bu ikisini kopyalaman yeterli.
 
 ### 3. Production build al
 
@@ -132,8 +155,9 @@ Kaldırmak için:
 npm run service:uninstall
 ```
 
-> **Kod/şema güncellediğinde:** `git pull` → `npm install` → `npm run build` →
-> `Restart-Service Defter`. Şema değiştiyse ayrıca `npm run db:push`.
+> **Kod/şema güncellediğinde:** `git pull` → `npm install` →
+> `npm run db:migrate` → `npm run build` → `Restart-Service Defter`.
+> `db:migrate` bekleyen migration'ları veri kaybı olmadan uygular.
 
 ### Ayarlar (ortam değişkenleri)
 
@@ -144,6 +168,7 @@ npm run service:uninstall
 | `DATABASE_URL` | SQLite dosya yolu | `file:./dev.db` |
 | `NEXTAUTH_SECRET` | Oturum imzalama anahtarı (production'da zorunlu) | — |
 | `NEXTAUTH_URL` | Uygulamanın dış adresi | `http://localhost:3000` |
+| `DEFTER_UPLOAD_DIR` | Fiş görsellerinin saklandığı klasör | `web/data/receipts` |
 
 Portu değiştirmek için servisi kurmadan önce `.env`'e `PORT=8080` gibi bir satır
 ekleyip `npm run service:install` çalıştır (kaldırıp yeniden kurman gerekir).

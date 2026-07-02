@@ -13,13 +13,17 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <Sidebar />
-      <div className="lg:pl-64">
-        <Topbar
-          name={session.user.name ?? session.user.username}
-          username={session.user.username}
-        />
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
+      <div className="print:hidden">
+        <Sidebar />
+      </div>
+      <div className="lg:pl-64 print:pl-0">
+        <div className="print:hidden">
+          <Topbar
+            name={session.user.name ?? session.user.username}
+            username={session.user.username}
+          />
+        </div>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8 lg:py-8 print:max-w-none print:p-0">
           {children}
         </main>
       </div>
