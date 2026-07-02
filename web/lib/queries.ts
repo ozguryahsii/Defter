@@ -22,12 +22,16 @@ export async function loadUserGroups(userId: string) {
           shares: { include: { user: true } },
         },
       },
+      settlements: {
+        orderBy: { createdAt: "desc" },
+        include: { fromUser: true, toUser: true },
+      },
     },
   });
 }
 
-function settlementFor(group: GroupWithData): SettlementResult {
-  return calculateSettlement({
+function settlementInputFor(group: GroupWithData) {
+  return {
     members: group.members.map((m) => ({
       userId: m.userId,
       userName: m.user.displayName ?? m.user.username,
@@ -37,7 +41,16 @@ function settlementFor(group: GroupWithData): SettlementResult {
       amount: e.amount,
       shares: e.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
     })),
-  });
+    settlements: group.settlements.map((p) => ({
+      fromUserId: p.fromUserId,
+      toUserId: p.toUserId,
+      amount: p.amount,
+    })),
+  };
+}
+
+function settlementFor(group: GroupWithData): SettlementResult {
+  return calculateSettlement(settlementInputFor(group));
 }
 
 export function groupTotal(group: GroupWithData): number {
@@ -133,17 +146,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   }
 
   for (const g of groups) {
-    const settlement = calculateSettlement({
-      members: g.members.map((m) => ({
-        userId: m.userId,
-        userName: m.user.displayName ?? m.user.username,
-      })),
-      expenses: g.expenses.map((e) => ({
-        payerId: e.payerId,
-        amount: e.amount,
-        shares: e.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
-      })),
-    });
+    const settlement = calculateSettlement(settlementInputFor(g));
     pendingSettlements += settlement.transfers.filter(
       (t) => t.fromUserId === userId || t.toUserId === userId,
     ).length;
@@ -210,10 +213,22 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   };
 }
 
+export type SettledItem = {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  toUserId: string;
+  toName: string;
+  amount: number;
+  confirmedById: string;
+  createdAt: Date;
+};
+
 export type GroupDetail = {
   group: GroupWithData;
   settlement: SettlementResult;
   total: number;
+  settled: SettledItem[];
 };
 
 export async function getGroupDetail(
@@ -231,14 +246,30 @@ export async function getGroupDetail(
           shares: { include: { user: true } },
         },
       },
+      settlements: {
+        orderBy: { createdAt: "desc" },
+        include: { fromUser: true, toUser: true },
+      },
     },
   });
   if (!group) return null;
+
+  const settled: SettledItem[] = group.settlements.map((p) => ({
+    id: p.id,
+    fromUserId: p.fromUserId,
+    fromName: p.fromUser.displayName ?? p.fromUser.username,
+    toUserId: p.toUserId,
+    toName: p.toUser.displayName ?? p.toUser.username,
+    amount: p.amount,
+    confirmedById: p.confirmedById,
+    createdAt: p.createdAt,
+  }));
 
   return {
     group,
     settlement: settlementFor(group),
     total: groupTotal(group),
+    settled,
   };
 }
 

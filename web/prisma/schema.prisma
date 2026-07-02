@@ -15,9 +15,11 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
-  memberships  GroupMember[]
-  paidExpenses Expense[]      @relation("Payer")
-  shares       ExpenseShare[]
+  memberships     GroupMember[]
+  paidExpenses    Expense[]      @relation("Payer")
+  shares          ExpenseShare[]
+  settlementsFrom Settlement[]   @relation("SettlementFrom")
+  settlementsTo   Settlement[]   @relation("SettlementTo")
 }
 
 model Group {
@@ -28,8 +30,9 @@ model Group {
   createdById String
   createdAt   DateTime @default(now())
 
-  members  GroupMember[]
-  expenses Expense[]
+  members     GroupMember[]
+  expenses    Expense[]
+  settlements Settlement[]
 }
 
 model GroupMember {
@@ -68,4 +71,23 @@ model ExpenseShare {
 
   expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
+}
+
+// A confirmed payment from a debtor to a creditor. Recording one reduces the
+// outstanding debt in the balance math. Only the creditor (toUser) may create
+// or undo it.
+model Settlement {
+  id            String   @id @default(cuid())
+  groupId       String
+  fromUserId    String // debtor who pays
+  toUserId      String // creditor who receives + confirms
+  amount        Float
+  confirmedById String // who marked it paid — always the creditor (toUserId)
+  createdAt     DateTime @default(now())
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  toUser   User  @relation("SettlementTo", fields: [toUserId], references: [id])
+
+  @@index([groupId])
 }

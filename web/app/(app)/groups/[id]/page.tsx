@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { SectionCard } from "@/components/dashboard/section-card";
-import { SettlementList } from "@/components/dashboard/settlement-list";
+import { GroupSettlement } from "@/components/groups/group-settlement";
 import { BalanceList } from "@/components/dashboard/balance-list";
 import { Reveal } from "@/components/magic/reveal";
 import { AddExpenseDialog } from "@/components/groups/add-expense-dialog";
@@ -28,7 +28,7 @@ export default async function GroupDetailPage({
   const detail = await getGroupDetail(params.id, userId);
   if (!detail) notFound();
 
-  const { group, settlement, total } = detail;
+  const { group, settlement, total, settled } = detail;
   const isVenture = group.type === "Girisim";
   const Icon = isVenture ? Rocket : Plane;
 
@@ -124,10 +124,12 @@ export default async function GroupDetailPage({
           <Reveal>
             <SectionCard
               title="Borç Durumu"
-              description="Minimum transferle nasıl ödeşilir"
+              description="Minimum transferle nasıl ödeşilir — ödemeyi yalnızca alacaklı onaylar"
             >
-              <SettlementList
+              <GroupSettlement
+                groupId={group.id}
                 transfers={settlement.transfers}
+                settled={settled}
                 currency={group.currency}
                 currentUserId={userId}
               />

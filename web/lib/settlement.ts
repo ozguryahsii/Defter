@@ -22,6 +22,15 @@ export type SettlementInput = {
     amount: number;
     shares: { userId: string; amount: number }[];
   }[];
+  /**
+   * Confirmed payments (debtor -> creditor). Each one reduces the outstanding
+   * debt: the payer's balance moves up toward 0, the receiver's moves down.
+   */
+  settlements?: {
+    fromUserId: string;
+    toUserId: string;
+    amount: number;
+  }[];
 };
 
 export type SettlementResult = {
@@ -51,6 +60,17 @@ export function calculateSettlement(input: SettlementInput): SettlementResult {
       if (balances.has(s.userId)) {
         balances.set(s.userId, (balances.get(s.userId) ?? 0) - s.amount);
       }
+    }
+  }
+
+  // Apply confirmed payments: the debtor (from) paid the creditor (to), so the
+  // debtor's balance rises toward 0 and the creditor's falls toward 0.
+  for (const p of input.settlements ?? []) {
+    if (balances.has(p.fromUserId)) {
+      balances.set(p.fromUserId, (balances.get(p.fromUserId) ?? 0) + p.amount);
+    }
+    if (balances.has(p.toUserId)) {
+      balances.set(p.toUserId, (balances.get(p.toUserId) ?? 0) - p.amount);
     }
   }
 

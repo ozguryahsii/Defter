@@ -5,7 +5,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
-import { equalShares } from "./settlement";
+import { equalShares, calculateSettlement } from "./settlement";
 
 export type ActionState = {
   ok: boolean;
@@ -224,6 +224,112 @@ export async function deleteExpense(
 
   await prisma.expense.delete({ where: { id: expenseId } });
   revalidatePath(`/groups/${expense.groupId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Settlements ("ödendi") — only the creditor (receiver) may confirm/undo.
+// ---------------------------------------------------------------------------
+
+/**
+ * Marks an outstanding debt (fromUserId owes toUserId) as paid.
+ * AUTHORIZATION: only the creditor — the one receiving the money (toUserId) —
+ * may do this. The debtor and any third party are rejected. The amount is
+ * derived server-side from the current outstanding transfer, so the client
+ * cannot inflate it.
+ */
+export async function settleTransfer(
+  groupId: string,
+  fromUserId: string,
+  toUserId: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  // Only the creditor (receiver) can confirm payment.
+  if (session.user.id !== toUserId)
+    return {
+      ok: false,
+      error: "Bu borcu yalnızca alacaklı (parayı alan kişi) ödendi işaretleyebilir.",
+    };
+
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, members: { some: { userId: session.user.id } } },
+    include: {
+      members: { include: { user: true } },
+      expenses: { include: { shares: true } },
+      settlements: true,
+    },
+  });
+  if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+
+  const memberIds = new Set(group.members.map((m) => m.userId));
+  if (!memberIds.has(fromUserId) || !memberIds.has(toUserId))
+    return { ok: false, error: "Geçersiz üye." };
+
+  // Recompute the current outstanding transfers and confirm this one exists.
+  const { transfers } = calculateSettlement({
+    members: group.members.map((m) => ({
+      userId: m.userId,
+      userName: m.user.displayName ?? m.user.username,
+    })),
+    expenses: group.expenses.map((e) => ({
+      payerId: e.payerId,
+      amount: e.amount,
+      shares: e.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
+    })),
+    settlements: group.settlements.map((p) => ({
+      fromUserId: p.fromUserId,
+      toUserId: p.toUserId,
+      amount: p.amount,
+    })),
+  });
+
+  const transfer = transfers.find(
+    (t) => t.fromUserId === fromUserId && t.toUserId === toUserId,
+  );
+  if (!transfer || transfer.amount <= 0)
+    return { ok: false, error: "Bu borç güncel değil ya da zaten kapanmış." };
+
+  await prisma.settlement.create({
+    data: {
+      groupId,
+      fromUserId,
+      toUserId,
+      amount: transfer.amount,
+      confirmedById: session.user.id,
+    },
+  });
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/**
+ * Undoes a confirmed payment. AUTHORIZATION: only the creditor who received it
+ * (the settlement's toUser) may undo it — restoring the debt.
+ */
+export async function unsettleTransfer(
+  settlementId: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const settlement = await prisma.settlement.findUnique({
+    where: { id: settlementId },
+  });
+  if (!settlement) return { ok: false, error: "Kayıt bulunamadı." };
+
+  if (session.user.id !== settlement.toUserId)
+    return {
+      ok: false,
+      error: "Bu ödemeyi yalnızca alacaklı geri alabilir.",
+    };
+
+  await prisma.settlement.delete({ where: { id: settlementId } });
+  revalidatePath(`/groups/${settlement.groupId}`);
   revalidatePath("/dashboard");
   return { ok: true };
 }
