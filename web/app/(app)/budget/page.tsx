@@ -2,11 +2,13 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getGroupDetail } from "@/lib/queries";
+import { GroupScreen } from "@/components/groups/group-screen";
 
 export const metadata: Metadata = { title: "Kişisel Bütçe" };
 
-// Entry point for the personal budget: finds (or creates once) the user's
-// single "Kisisel" group and forwards to its screen.
+// The personal budget renders on its own route so the sidebar highlights
+// "Kişisel Bütçe" (not "Gruplar"). The backing group is created on first visit.
 export default async function BudgetPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -34,5 +36,8 @@ export default async function BudgetPage() {
     });
   }
 
-  redirect(`/groups/${group.id}`);
+  const detail = await getGroupDetail(group.id, userId);
+  if (!detail) redirect("/dashboard");
+
+  return <GroupScreen detail={detail} userId={userId} />;
 }

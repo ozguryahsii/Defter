@@ -7,6 +7,7 @@ import { getGroupDetail } from "@/lib/queries";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { PrintButton } from "@/components/groups/print-button";
+import { CategoryDonut } from "@/components/charts/category-donut";
 
 export const metadata: Metadata = { title: "Rapor" };
 
@@ -26,6 +27,17 @@ export default async function GroupReportPage({
     group.members.find((m) => m.userId === id)?.user.displayName ??
     group.members.find((m) => m.userId === id)?.user.username ??
     "—";
+
+  const categoryMap = new Map<string, number>();
+  for (const e of group.expenses) {
+    if (e.kind === "income") continue;
+    const cat = e.category?.trim() || "Diğer";
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + e.amount);
+  }
+  const categoryBreakdown = [...categoryMap.entries()]
+    .map(([category, amount]) => ({ category, amount: Math.round(amount) }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 6);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 print:space-y-4">
@@ -66,6 +78,13 @@ export default async function GroupReportPage({
         />
         <Stat label="Harcama Sayısı" value={String(group.expenses.length)} />
       </div>
+
+      {/* Category breakdown */}
+      {categoryBreakdown.length > 0 && (
+        <Section title="Kategori Dağılımı">
+          <CategoryDonut data={categoryBreakdown} currency={cur} />
+        </Section>
+      )}
 
       {/* Balances */}
       <Section title="Net Bakiyeler">

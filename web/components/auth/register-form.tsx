@@ -79,13 +79,20 @@ export function RegisterForm() {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="displayName">Görünen ad (opsiyonel)</Label>
+        <Label htmlFor="displayName">Görünen ad (değiştirilemez)</Label>
         <Input
           id="displayName"
           name="displayName"
           autoComplete="name"
           placeholder="Adın Soyadın"
+          required
         />
+        {fieldErrors.displayName && (
+          <p className="text-xs text-destructive">{fieldErrors.displayName}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Grup arkadaşların seni bu adla görür; kayıt sonrası değiştirilemez.
+        </p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Parola</Label>

@@ -1,17 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  ArrowRight,
-  Layers,
-  Plus,
-  Receipt,
-  Scale,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, Layers, Plus } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getDashboardData } from "@/lib/queries";
+import { formatCurrency } from "@/lib/format";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { StatCard } from "@/components/dashboard/stat-card";
+import { KpiGrid } from "@/components/dashboard/kpi-grid";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { GroupCard } from "@/components/dashboard/group-card";
 import { RecentExpenses } from "@/components/dashboard/recent-expenses";
@@ -32,7 +26,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Merhaba, ${session!.user.name} 👋`}
-        description="Tüm gruplarındaki harcama ve borç durumunun özeti."
+        description="Tüm gruplarındaki harcama ve borç durumunun özeti. (Kişisel Bütçe alanındaki harcama ve gelirler bu alana yansıtılmaz.)"
       >
         <Button asChild variant="brand">
           <Link href="/groups/new">
@@ -51,46 +45,64 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
-          {/* KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Reveal delay={0}>
-              <StatCard
-                label="Toplam Harcama"
-                value={data.kpis.totalSpent}
-                icon={<Wallet />}
-                currency={cur}
-                hint="tüm gruplar"
-              />
-            </Reveal>
-            <Reveal delay={0.05}>
-              <StatCard
-                label="Senin Ödediğin"
-                value={data.kpis.youPaid}
-                icon={<Receipt />}
-                currency={cur}
-                tone="brand"
-                hint="cebinden çıkan"
-              />
-            </Reveal>
-            <Reveal delay={0.1}>
-              <StatCard
-                label="Sana Borçlu"
-                value={data.kpis.owedToYou}
-                icon={<ArrowRight />}
-                currency={cur}
-                tone="success"
-                hint="alacağın"
-              />
-            </Reveal>
-            <Reveal delay={0.15}>
-              <StatCard
-                label="Bekleyen Ödeşme"
-                value={data.kpis.pendingSettlements}
-                icon={<Scale />}
-                hint="işlem"
-              />
-            </Reveal>
-          </div>
+          {/* KPIs — tıklanınca detay dökümü açılır */}
+          <KpiGrid
+            items={[
+              {
+                key: "spent",
+                label: "Toplam Harcama",
+                value: formatCurrency(data.kpis.totalSpent, cur),
+                hint: "tüm gruplar",
+                icon: "wallet",
+                rows: data.details.spent,
+                emptyText: "Henüz harcama yok.",
+                detailHint: "Grup bazında toplam harcamalar",
+              },
+              {
+                key: "paid",
+                label: "Senin Ödediğin",
+                value: formatCurrency(data.kpis.youPaid, cur),
+                hint: "cebinden çıkan",
+                tone: "brand",
+                icon: "receipt",
+                rows: data.details.paid,
+                emptyText: "Henüz ödeme yapmadın.",
+                detailHint: "Grup bazında senin ödediklerin",
+              },
+              {
+                key: "owed",
+                label: "Sana Borçlu",
+                value: formatCurrency(data.kpis.owedToYou, cur),
+                hint: "alacağın",
+                tone: "success",
+                icon: "in",
+                rows: data.details.owedToYou,
+                emptyText: "Kimsenin sana borcu yok.",
+                detailHint: "Kim, hangi gruptan, ne kadar borçlu",
+              },
+              {
+                key: "owe",
+                label: "Senin Borcun",
+                value: formatCurrency(data.kpis.youOwe, cur),
+                hint: "ödeyeceğin",
+                tone: "destructive",
+                icon: "out",
+                rows: data.details.youOwe,
+                emptyText: "Borcun yok. 🎉",
+                detailHint: "Kime, hangi grupta, ne kadar borçlusun",
+              },
+              {
+                key: "pending",
+                label: "Bekleyen Ödeşme",
+                value: `${data.kpis.pendingSettlements} işlem`,
+                hint: "seni ilgilendiren",
+                icon: "scale",
+                rows: data.details.pending,
+                emptyText: "Bekleyen ödeşme yok.",
+                detailHint: "Seni ilgilendiren açık transferler",
+              },
+            ]}
+          />
 
           {/* Groups + side column */}
           <div className="grid gap-4 lg:grid-cols-3">

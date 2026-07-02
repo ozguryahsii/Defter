@@ -4,6 +4,7 @@ import {
   type SettlementResult,
 } from "./settlement";
 import { materializeRecurring } from "./recurring";
+import { formatCurrency } from "./format";
 
 export type GroupWithData = Awaited<
   ReturnType<typeof loadUserGroups>
@@ -92,6 +93,16 @@ export function summarize(group: GroupWithData, userId: string): GroupSummary {
   };
 }
 
+export type DetailRow = { left: string; sub?: string; right: string };
+
+export type DashboardDetails = {
+  spent: DetailRow[];
+  paid: DetailRow[];
+  owedToYou: DetailRow[];
+  youOwe: DetailRow[];
+  pending: DetailRow[];
+};
+
 export type DashboardData = {
   groups: GroupSummary[];
   kpis: {
@@ -103,6 +114,7 @@ export type DashboardData = {
     youOwe: number;
     pendingSettlements: number;
   };
+  details: DashboardDetails;
   monthlySpend: { month: string; amount: number }[];
   categoryBreakdown: { category: string; amount: number }[];
   memberSpend: { name: string; paid: number }[];
@@ -150,11 +162,64 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     monthMap.set(`${d.getFullYear()}-${d.getMonth()}`, 0);
   }
 
+  const details: DashboardDetails = {
+    spent: [],
+    paid: [],
+    owedToYou: [],
+    youOwe: [],
+    pending: [],
+  };
+  let owedToYouTotal = 0;
+  let youOweTotal = 0;
+
   for (const g of groups) {
     const settlement = calculateSettlement(settlementInputFor(g));
     pendingSettlements += settlement.transfers.filter(
       (t) => t.fromUserId === userId || t.toUserId === userId,
     ).length;
+
+    // KPI drill-down rows
+    if (g.expenses.length > 0) {
+      details.spent.push({
+        left: g.name,
+        sub: `${g.expenses.length} harcama`,
+        right: formatCurrency(groupTotal(g), g.currency),
+      });
+    }
+    const paidInGroup = g.expenses
+      .filter((e) => e.payerId === userId)
+      .reduce((s, e) => s + e.amount, 0);
+    if (paidInGroup > 0) {
+      details.paid.push({
+        left: g.name,
+        right: formatCurrency(paidInGroup, g.currency),
+      });
+    }
+    for (const t of settlement.transfers) {
+      if (t.toUserId === userId) {
+        owedToYouTotal += t.amount;
+        details.owedToYou.push({
+          left: t.fromUserName,
+          sub: g.name,
+          right: formatCurrency(t.amount, g.currency),
+        });
+      }
+      if (t.fromUserId === userId) {
+        youOweTotal += t.amount;
+        details.youOwe.push({
+          left: t.toUserName,
+          sub: g.name,
+          right: formatCurrency(t.amount, g.currency),
+        });
+      }
+      if (t.fromUserId === userId || t.toUserId === userId) {
+        details.pending.push({
+          left: `${t.fromUserName} → ${t.toUserName}`,
+          sub: g.name,
+          right: formatCurrency(t.amount, g.currency),
+        });
+      }
+    }
 
     for (const e of g.expenses) {
       if (e.payerId === userId) youPaid += e.amount;
@@ -206,10 +271,11 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       totalSpent,
       youPaid,
       netBalance,
-      owedToYou: netBalance > 0 ? netBalance : 0,
-      youOwe: netBalance < 0 ? -netBalance : 0,
+      owedToYou: owedToYouTotal,
+      youOwe: youOweTotal,
       pendingSettlements,
     },
+    details,
     monthlySpend,
     categoryBreakdown,
     memberSpend,

@@ -35,7 +35,11 @@ const registerSchema = z.object({
     .trim()
     .toLowerCase()
     .email("Geçerli bir e-posta adresi girin."),
-  displayName: z.string().trim().max(100).optional(),
+  displayName: z
+    .string()
+    .trim()
+    .min(3, "En az 3 karakter")
+    .max(100, "En fazla 100 karakter"),
   password: z.string().min(8, "En az 8 karakter"),
 });
 
@@ -46,7 +50,7 @@ export async function registerUser(
   const parsed = registerSchema.safeParse({
     username: formData.get("username"),
     email: formData.get("email"),
-    displayName: formData.get("displayName") || undefined,
+    displayName: formData.get("displayName"),
     password: formData.get("password"),
   });
   if (!parsed.success) {
@@ -55,10 +59,14 @@ export async function registerUser(
     return { ok: false, fieldErrors: fe };
   }
 
-  const exists = await prisma.user.findUnique({
-    where: { username: parsed.data.username },
-  });
-  if (exists) return { ok: false, error: "Bu kullanıcı adı zaten alınmış." };
+  // Case-insensitive uniqueness: "Ozgur" and "ozgur" are the same account.
+  const existing = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "User" WHERE LOWER(username) = LOWER(${parsed.data.username}) LIMIT 1`;
+  if (existing.length > 0)
+    return {
+      ok: false,
+      fieldErrors: { username: "Bu kullanıcı adı zaten alınmış." },
+    };
 
   const emailTaken = await prisma.user.findUnique({
     where: { email: parsed.data.email },
@@ -74,7 +82,7 @@ export async function registerUser(
     data: {
       username: parsed.data.username,
       email: parsed.data.email,
-      displayName: parsed.data.displayName || null,
+      displayName: parsed.data.displayName,
       passwordHash,
     },
   });
@@ -533,8 +541,8 @@ export async function unsettleTransfer(
 // ---------------------------------------------------------------------------
 // Profile (display name + IBAN for settlements)
 // ---------------------------------------------------------------------------
+// displayName intentionally absent: it is set at registration and immutable.
 const profileSchema = z.object({
-  displayName: z.string().trim().max(100).optional(),
   email: z
     .string()
     .trim()
@@ -561,7 +569,6 @@ export async function updateProfile(
   if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
 
   const parsed = profileSchema.safeParse({
-    displayName: formData.get("displayName") || undefined,
     email: (formData.get("email") as string | null) ?? undefined,
     iban: formData.get("iban") || undefined,
     ibanName: formData.get("ibanName") || undefined,
@@ -587,7 +594,6 @@ export async function updateProfile(
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      displayName: parsed.data.displayName || null,
       email,
       iban: parsed.data.iban || null,
       ibanName: parsed.data.ibanName || null,

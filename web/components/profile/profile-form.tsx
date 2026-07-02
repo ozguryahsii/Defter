@@ -41,12 +41,12 @@ export function ProfileForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="displayName">Görünen ad</Label>
+        <Label htmlFor="displayName">Görünen ad (değiştirilemez)</Label>
         <Input
           id="displayName"
-          name="displayName"
           defaultValue={initial.displayName}
-          placeholder="Adın Soyadın"
+          disabled
+          className="opacity-70"
         />
       </div>
       <div className="space-y-2">
@@ -81,12 +81,12 @@ export function ProfileForm({
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="ibanName">IBAN hesap adı</Label>
+        <Label htmlFor="ibanName">IBAN Sahibinin Adı Soyadı</Label>
         <Input
           id="ibanName"
           name="ibanName"
           defaultValue={initial.ibanName}
-          placeholder="Ad Soyad (hesap sahibi)"
+          placeholder="Ad Soyad"
         />
       </div>
       <Button type="submit" variant="brand" disabled={loading}>

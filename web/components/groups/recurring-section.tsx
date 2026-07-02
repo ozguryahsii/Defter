@@ -40,7 +40,6 @@ export function RecurringSection({
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [payerId, setPayerId] = useState(currentUserId);
   const [interval, setIntervalVal] = useState<"monthly" | "weekly">("monthly");
   const [startDate, setStartDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
@@ -53,7 +52,7 @@ export function RecurringSection({
       groupId,
       description,
       amount: parseFloat(amount) || 0,
-      payerId,
+      payerId: currentUserId,
       interval,
       startDate,
       participantIds: members.map((m) => m.userId),
@@ -171,31 +170,14 @@ export function RecurringSection({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <Label>Ödeyen</Label>
-              <Select value={payerId} onValueChange={setPayerId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => (
-                    <SelectItem key={m.userId} value={m.userId}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rstart">İlk tarih</Label>
-              <Input
-                id="rstart"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="rstart">İlk tarih</Label>
+            <Input
+              id="rstart"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
           </div>
           <div className="flex gap-2">
             <Button type="submit" variant="brand" size="sm" disabled={loading}>
