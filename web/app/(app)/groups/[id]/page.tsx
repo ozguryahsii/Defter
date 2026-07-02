@@ -14,6 +14,7 @@ import { BalanceList } from "@/components/dashboard/balance-list";
 import { Reveal } from "@/components/magic/reveal";
 import { AddExpenseDialog } from "@/components/groups/add-expense-dialog";
 import { AddMemberForm } from "@/components/groups/add-member-form";
+import { InviteButton } from "@/components/groups/invite-button";
 import { ExpenseList } from "@/components/groups/expense-list";
 
 export const metadata: Metadata = { title: "Grup" };
@@ -37,17 +38,48 @@ export default async function GroupDetailPage({
     name: m.user.displayName ?? m.user.username,
   }));
 
-  const expenseItems = group.expenses.map((e) => ({
-    id: e.id,
-    description: e.description,
-    category: e.category,
-    amount: e.amount,
-    date: e.date.toISOString(),
-    payerName: e.payer.displayName ?? e.payer.username,
-    splitType: e.splitType,
-    shareCount: e.shares.length,
-    canDelete: e.payerId === userId || group.createdById === userId,
-  }));
+  const expenseItems = group.expenses.map((e) => {
+    const canManage = e.payerId === userId || group.createdById === userId;
+    const editSplit: "Equal" | "Exact" =
+      e.splitType === "Exact" ? "Exact" : "Equal";
+    return {
+      id: e.id,
+      description: e.description,
+      category: e.category,
+      amount: e.amount,
+      date: e.date.toISOString(),
+      payerName: e.payer.displayName ?? e.payer.username,
+      splitType: e.splitType,
+      shareCount: e.shares.length,
+      canDelete: canManage,
+      canEdit: canManage,
+      receiptPath: e.receiptPath,
+      original:
+        e.originalAmount != null && e.originalCurrency
+          ? { amount: e.originalAmount, currency: e.originalCurrency }
+          : null,
+      editInit: {
+        id: e.id,
+        description: e.description,
+        category: e.category ?? "",
+        amount: e.amount,
+        payerId: e.payerId,
+        date: e.date.toISOString().slice(0, 10),
+        splitType: editSplit,
+        participantIds: e.shares.map((s) => s.userId),
+        exactAmounts: Object.fromEntries(
+          e.shares.map((s) => [s.userId, String(s.amount)]),
+        ),
+      },
+    };
+  });
+
+  const payInfo = Object.fromEntries(
+    group.members.map((m) => [
+      m.userId,
+      { iban: m.user.iban, ibanName: m.user.ibanName },
+    ]),
+  );
 
   const yourBalance =
     settlement.balances.find((b) => b.userId === userId)?.amount ?? 0;
@@ -132,6 +164,7 @@ export default async function GroupDetailPage({
                 settled={settled}
                 currency={group.currency}
                 currentUserId={userId}
+                payInfo={payInfo}
               />
             </SectionCard>
           </Reveal>
@@ -141,7 +174,13 @@ export default async function GroupDetailPage({
               title="Harcamalar"
               description={`${group.expenses.length} kayıt`}
             >
-              <ExpenseList items={expenseItems} currency={group.currency} />
+              <ExpenseList
+                items={expenseItems}
+                currency={group.currency}
+                members={members}
+                currentUserId={userId}
+                groupId={group.id}
+              />
             </SectionCard>
           </Reveal>
         </div>
@@ -185,6 +224,9 @@ export default async function GroupDetailPage({
                 Kullanıcı adına göre üye ekle
               </p>
               <AddMemberForm groupId={group.id} />
+              <div className="mt-3">
+                <InviteButton groupId={group.id} />
+              </div>
             </SectionCard>
           </Reveal>
         </div>

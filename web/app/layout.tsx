@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { PwaRegister } from "@/components/pwa-register";
 
 const sans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -16,6 +17,14 @@ export const metadata: Metadata = {
   },
   description:
     "Arkadaş grupları ve ortak girişimler için premium harcama paylaşım ve borç hesaplama uygulaması.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Defter",
+  appleWebApp: { capable: true, title: "Defter", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b0b0f",
 };
 
 export default function RootLayout({
@@ -25,6 +34,7 @@ export default function RootLayout({
     <html lang="tr" className={`dark ${sans.variable}`} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>{children}</Providers>
+        <PwaRegister />
       </body>
     </html>
   );

@@ -7,5 +7,10 @@ export default withAuth({
 
 // Protect the application area; auth pages and API remain public.
 export const config = {
-  matcher: ["/dashboard/:path*", "/groups/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/groups/:path*",
+    "/profile/:path*",
+    "/join/:path*",
+  ],
 };

@@ -5,14 +5,17 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
+import { randomBytes } from "crypto";
 import { equalShares, calculateSettlement } from "./settlement";
 import { logActivity } from "./activity";
+import { saveReceipt } from "./uploads";
 
 export type ActionState = {
   ok: boolean;
   error?: string;
   fieldErrors?: Record<string, string>;
   groupId?: string;
+  token?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -149,12 +152,16 @@ export async function addExpense(input: {
   groupId: string;
   description: string;
   category?: string;
-  amount: number;
+  amount: number; // in group currency
   payerId: string;
   date: string;
   splitType: "Equal" | "Exact";
   participantIds: string[];
   exactAmounts?: Record<string, number>;
+  // Optional multi-currency record: what was originally entered.
+  originalAmount?: number;
+  originalCurrency?: string;
+  fxRate?: number;
 }): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
@@ -196,6 +203,12 @@ export async function addExpense(input: {
     shares = equalShares(amount, participants);
   }
 
+  const hasFx =
+    !!input.originalCurrency &&
+    input.originalCurrency !== group.currency &&
+    Number.isFinite(input.fxRate) &&
+    (input.fxRate ?? 0) > 0;
+
   const created = await prisma.expense.create({
     data: {
       groupId: input.groupId,
@@ -205,6 +218,9 @@ export async function addExpense(input: {
       category: input.category?.trim() || null,
       date: new Date(input.date),
       splitType: input.splitType,
+      originalAmount: hasFx ? input.originalAmount ?? null : null,
+      originalCurrency: hasFx ? input.originalCurrency ?? null : null,
+      fxRate: hasFx ? input.fxRate ?? null : null,
       shares: { create: shares },
     },
   });
@@ -375,4 +391,238 @@ export async function unsettleTransfer(
   revalidatePath(`/groups/${settlement.groupId}`);
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Profile (display name + IBAN for settlements)
+// ---------------------------------------------------------------------------
+const profileSchema = z.object({
+  displayName: z.string().trim().max(100).optional(),
+  iban: z
+    .string()
+    .trim()
+    .transform((s) => s.replace(/\s+/g, "").toUpperCase())
+    .refine((s) => s === "" || /^TR\d{24}$/.test(s), "Geçerli bir TR IBAN girin (TR + 24 rakam).")
+    .optional(),
+  ibanName: z.string().trim().max(120).optional(),
+});
+
+export async function updateProfile(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const parsed = profileSchema.safeParse({
+    displayName: formData.get("displayName") || undefined,
+    iban: formData.get("iban") || undefined,
+    ibanName: formData.get("ibanName") || undefined,
+  });
+  if (!parsed.success) {
+    const fe: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fe[String(issue.path[0])] = issue.message;
+    return { ok: false, fieldErrors: fe };
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      displayName: parsed.data.displayName || null,
+      iban: parsed.data.iban || null,
+      ibanName: parsed.data.ibanName || null,
+    },
+  });
+
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Edit expense (payer or group owner)
+// ---------------------------------------------------------------------------
+export async function editExpense(input: {
+  expenseId: string;
+  description: string;
+  category?: string;
+  amount: number;
+  payerId: string;
+  date: string;
+  splitType: "Equal" | "Exact";
+  participantIds: string[];
+  exactAmounts?: Record<string, number>;
+}): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const expense = await prisma.expense.findUnique({
+    where: { id: input.expenseId },
+    include: { group: { include: { members: true } } },
+  });
+  if (
+    !expense ||
+    !expense.group.members.some((m) => m.userId === session.user.id)
+  )
+    return { ok: false, error: "Harcama bulunamadı." };
+  if (
+    expense.payerId !== session.user.id &&
+    expense.group.createdById !== session.user.id
+  )
+    return { ok: false, error: "Bu harcamayı düzenleme yetkiniz yok." };
+
+  const memberIds = new Set(expense.group.members.map((m) => m.userId));
+  const participants = [...new Set(input.participantIds)].filter((id) =>
+    memberIds.has(id),
+  );
+  const amount = Math.round(input.amount * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0)
+    return { ok: false, error: "Tutar 0'dan büyük olmalı." };
+  if (!input.description.trim()) return { ok: false, error: "Açıklama gerekli." };
+  if (!memberIds.has(input.payerId))
+    return { ok: false, error: "Ödeyen grup üyesi olmalı." };
+  if (participants.length === 0)
+    return { ok: false, error: "En az bir katılımcı seçmelisiniz." };
+
+  let shares: { userId: string; amount: number }[];
+  if (input.splitType === "Exact") {
+    shares = participants.map((userId) => ({
+      userId,
+      amount: Math.round((input.exactAmounts?.[userId] ?? 0) * 100) / 100,
+    }));
+    const sum = shares.reduce((s, x) => s + x.amount, 0);
+    if (Math.round(sum * 100) !== Math.round(amount * 100))
+      return {
+        ok: false,
+        error: `Payların toplamı (${sum.toFixed(2)}) tutara (${amount.toFixed(2)}) eşit olmalı.`,
+      };
+  } else {
+    shares = equalShares(amount, participants);
+  }
+
+  await prisma.$transaction([
+    prisma.expenseShare.deleteMany({ where: { expenseId: input.expenseId } }),
+    prisma.expense.update({
+      where: { id: input.expenseId },
+      data: {
+        payerId: input.payerId,
+        amount,
+        description: input.description.trim(),
+        category: input.category?.trim() || null,
+        date: new Date(input.date),
+        splitType: input.splitType,
+        shares: { create: shares },
+      },
+    }),
+  ]);
+
+  await logActivity({
+    groupId: expense.groupId,
+    actorId: session.user.id,
+    type: "expense.edit",
+    summary: `"${input.description.trim()}" harcaması düzenlendi`,
+  });
+
+  revalidatePath(`/groups/${expense.groupId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Receipt photo
+// ---------------------------------------------------------------------------
+export async function attachReceipt(
+  expenseId: string,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const expense = await prisma.expense.findUnique({
+    where: { id: expenseId },
+    include: { group: { include: { members: true } } },
+  });
+  if (
+    !expense ||
+    !expense.group.members.some((m) => m.userId === session.user.id)
+  )
+    return { ok: false, error: "Harcama bulunamadı." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0)
+    return { ok: false, error: "Dosya seçilmedi." };
+
+  const saved = await saveReceipt(expenseId, file);
+  if (!saved.ok) return { ok: false, error: saved.error };
+
+  await prisma.expense.update({
+    where: { id: expenseId },
+    data: { receiptPath: saved.filename },
+  });
+
+  revalidatePath(`/groups/${expense.groupId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Invite links
+// ---------------------------------------------------------------------------
+export async function createInvite(groupId: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const member = await prisma.groupMember.findFirst({
+    where: { groupId, userId: session.user.id },
+  });
+  if (!member) return { ok: false, error: "Bu gruba erişiminiz yok." };
+
+  const token = randomBytes(16).toString("hex");
+  await prisma.invite.create({
+    data: {
+      groupId,
+      token,
+      createdById: session.user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 gün
+    },
+  });
+
+  return { ok: true, token };
+}
+
+export async function joinViaInvite(token: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const invite = await prisma.invite.findUnique({ where: { token } });
+  if (!invite || !invite.active)
+    return { ok: false, error: "Davet linki geçersiz." };
+  if (invite.expiresAt && invite.expiresAt < new Date())
+    return { ok: false, error: "Davet linkinin süresi dolmuş." };
+  if (invite.maxUses != null && invite.uses >= invite.maxUses)
+    return { ok: false, error: "Davet linki kullanım limitine ulaşmış." };
+
+  const existing = await prisma.groupMember.findFirst({
+    where: { groupId: invite.groupId, userId: session.user.id },
+  });
+  if (existing) return { ok: true, groupId: invite.groupId };
+
+  await prisma.$transaction([
+    prisma.groupMember.create({
+      data: { groupId: invite.groupId, userId: session.user.id },
+    }),
+    prisma.invite.update({
+      where: { id: invite.id },
+      data: { uses: { increment: 1 } },
+    }),
+  ]);
+
+  await logActivity({
+    groupId: invite.groupId,
+    actorId: session.user.id,
+    type: "member.join",
+    summary: `${session.user.name ?? "Bir kullanıcı"} davet linkiyle katıldı`,
+  });
+
+  revalidatePath(`/groups/${invite.groupId}`);
+  return { ok: true, groupId: invite.groupId };
 }

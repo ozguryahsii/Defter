@@ -18,6 +18,12 @@ import { settleTransfer, unsettleTransfer } from "@/lib/actions";
 import type { Transfer } from "@/lib/settlement";
 import type { SettledItem } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { PayDialog } from "@/components/groups/pay-dialog";
+
+export type PayInfo = Record<
+  string,
+  { iban?: string | null; ibanName?: string | null }
+>;
 
 export function GroupSettlement({
   groupId,
@@ -25,12 +31,14 @@ export function GroupSettlement({
   settled,
   currency,
   currentUserId,
+  payInfo = {},
 }: {
   groupId: string;
   transfers: Transfer[];
   settled: SettledItem[];
   currency: string;
   currentUserId: string;
+  payInfo?: PayInfo;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -128,10 +136,13 @@ export function GroupSettlement({
                     Ödendi
                   </Button>
                 ) : isDebtor ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Lock className="h-3 w-3" />
-                    {t.toUserName} onaylayacak
-                  </span>
+                  <PayDialog
+                    creditorName={t.toUserName}
+                    iban={payInfo[t.toUserId]?.iban}
+                    ibanName={payInfo[t.toUserId]?.ibanName}
+                    amount={t.amount}
+                    currency={currency}
+                  />
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />

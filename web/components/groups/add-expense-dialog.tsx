@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Loader2, Plus } from "lucide-react";
-import { addExpense } from "@/lib/actions";
+import { addExpense, editExpense } from "@/lib/actions";
 import { equalShares } from "@/lib/settlement";
 import { formatCurrency, initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -31,33 +31,66 @@ import { cn } from "@/lib/utils";
 
 type Member = { userId: string; name: string };
 
+export type EditExpenseInit = {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  payerId: string;
+  date: string; // yyyy-mm-dd
+  splitType: "Equal" | "Exact";
+  participantIds: string[];
+  exactAmounts: Record<string, string>;
+};
+
 export function AddExpenseDialog({
   groupId,
   currency,
   members,
   currentUserId,
+  expense,
+  trigger,
 }: {
   groupId: string;
   currency: string;
   members: Member[];
   currentUserId: string;
+  expense?: EditExpenseInit;
+  trigger?: React.ReactNode;
 }) {
   const router = useRouter();
+  const isEdit = !!expense;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [amount, setAmount] = useState("");
-  const [payerId, setPayerId] = useState(currentUserId);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [splitType, setSplitType] = useState<"Equal" | "Exact">("Equal");
-  const [participants, setParticipants] = useState<string[]>(
-    members.map((m) => m.userId),
+  const [description, setDescription] = useState(expense?.description ?? "");
+  const [category, setCategory] = useState(expense?.category ?? "");
+  const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
+  const [payerId, setPayerId] = useState(expense?.payerId ?? currentUserId);
+  const [date, setDate] = useState(
+    expense?.date ?? new Date().toISOString().slice(0, 10),
   );
-  const [exact, setExact] = useState<Record<string, string>>({});
+  const [splitType, setSplitType] = useState<"Equal" | "Exact">(
+    expense?.splitType ?? "Equal",
+  );
+  const [participants, setParticipants] = useState<string[]>(
+    expense?.participantIds ?? members.map((m) => m.userId),
+  );
+  const [exact, setExact] = useState<Record<string, string>>(
+    expense?.exactAmounts ?? {},
+  );
+  const [entryCurrency, setEntryCurrency] = useState(currency);
+  const [fxRate, setFxRate] = useState("");
 
-  const numericAmount = parseFloat(amount) || 0;
+  const enteredAmount = parseFloat(amount) || 0;
+  const isForeign = entryCurrency !== currency;
+  const rate = parseFloat(fxRate) || 0;
+  // numericAmount is always in the GROUP currency (converted when foreign).
+  const numericAmount = isForeign
+    ? Math.round(enteredAmount * rate * 100) / 100
+    : enteredAmount;
+
+  const CURRENCIES = ["TRY", "USD", "EUR", "GBP"];
 
   const exactSum = useMemo(
     () =>
@@ -79,43 +112,73 @@ export function AddExpenseDialog({
   }
 
   function reset() {
-    setDescription("");
-    setCategory("");
-    setAmount("");
-    setPayerId(currentUserId);
-    setDate(new Date().toISOString().slice(0, 10));
-    setSplitType("Equal");
-    setParticipants(members.map((m) => m.userId));
-    setExact({});
+    if (expense) {
+      // Edit mode: restore to the expense's saved values.
+      setDescription(expense.description);
+      setCategory(expense.category);
+      setAmount(String(expense.amount));
+      setPayerId(expense.payerId);
+      setDate(expense.date);
+      setSplitType(expense.splitType);
+      setParticipants(expense.participantIds);
+      setExact(expense.exactAmounts);
+    } else {
+      setDescription("");
+      setCategory("");
+      setAmount("");
+      setPayerId(currentUserId);
+      setDate(new Date().toISOString().slice(0, 10));
+      setSplitType("Equal");
+      setParticipants(members.map((m) => m.userId));
+      setExact({});
+    }
+    setEntryCurrency(currency);
+    setFxRate("");
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    const res = await addExpense({
-      groupId,
-      description,
-      category: category || undefined,
-      amount: numericAmount,
-      payerId,
-      date,
-      splitType,
-      participantIds: participants,
-      exactAmounts:
-        splitType === "Exact"
-          ? Object.fromEntries(
-              participants.map((id) => [id, parseFloat(exact[id] ?? "") || 0]),
-            )
-          : undefined,
-    });
+    const exactAmounts =
+      splitType === "Exact"
+        ? Object.fromEntries(
+            participants.map((id) => [id, parseFloat(exact[id] ?? "") || 0]),
+          )
+        : undefined;
+
+    const res = isEdit
+      ? await editExpense({
+          expenseId: expense!.id,
+          description,
+          category: category || undefined,
+          amount: numericAmount,
+          payerId,
+          date,
+          splitType,
+          participantIds: participants,
+          exactAmounts,
+        })
+      : await addExpense({
+          groupId,
+          description,
+          category: category || undefined,
+          amount: numericAmount,
+          payerId,
+          date,
+          splitType,
+          participantIds: participants,
+          originalAmount: isForeign ? enteredAmount : undefined,
+          originalCurrency: isForeign ? entryCurrency : undefined,
+          fxRate: isForeign ? rate : undefined,
+          exactAmounts,
+        });
     setLoading(false);
 
     if (!res.ok) {
-      toast.error(res.error ?? "Harcama eklenemedi.");
+      toast.error(res.error ?? "İşlem başarısız.");
       return;
     }
-    toast.success("Harcama eklendi. Borçlar güncellendi.");
-    reset();
+    toast.success(isEdit ? "Harcama güncellendi." : "Harcama eklendi.");
     setOpen(false);
     router.refresh();
   }
@@ -129,13 +192,15 @@ export function AddExpenseDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="brand">
-          <Plus /> Harcama Ekle
-        </Button>
+        {trigger ?? (
+          <Button variant="brand">
+            <Plus /> Harcama Ekle
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Harcama Ekle</DialogTitle>
+          <DialogTitle>{isEdit ? "Harcamayı Düzenle" : "Harcama Ekle"}</DialogTitle>
           <DialogDescription>
             Tutarı gir, kimlerin dahil olduğunu seç. Borç tablosu anında güncellenir.
           </DialogDescription>
@@ -156,18 +221,35 @@ export function AddExpenseDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="amount">Tutar ({currency})</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                required
-              />
+              <Label htmlFor="amount">Tutar</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  required
+                  className="flex-1"
+                />
+                {!isEdit && (
+                  <Select value={entryCurrency} onValueChange={setEntryCurrency}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="cat">Kategori</Label>
@@ -179,6 +261,34 @@ export function AddExpenseDialog({
               />
             </div>
           </div>
+
+          {isForeign && (
+            <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
+              <Label htmlFor="fx">
+                Kur: 1 {entryCurrency} kaç {currency}?
+              </Label>
+              <Input
+                id="fx"
+                type="number"
+                step="0.0001"
+                min="0"
+                inputMode="decimal"
+                value={fxRate}
+                onChange={(e) => setFxRate(e.target.value)}
+                placeholder="Örn. 35.20"
+                required
+              />
+              {numericAmount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {enteredAmount} {entryCurrency} ≈{" "}
+                  <span className="font-medium text-foreground">
+                    {formatCurrency(numericAmount, currency)}
+                  </span>{" "}
+                  (grup para birimi)
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
@@ -319,7 +429,7 @@ export function AddExpenseDialog({
             </Button>
             <Button type="submit" variant="brand" disabled={loading}>
               {loading && <Loader2 className="animate-spin" />}
-              Kaydet
+              {isEdit ? "Güncelle" : "Kaydet"}
             </Button>
           </DialogFooter>
         </form>
