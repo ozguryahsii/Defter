@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { randomBytes } from "crypto";
-import { equalShares, ratioShares, calculateSettlement } from "./settlement";
+import { equalShares, calculateSettlement } from "./settlement";
 import { logActivity } from "./activity";
 import { notify, notifyGroupMembers } from "./notify";
 import { saveReceipt } from "./uploads";
@@ -71,7 +71,6 @@ export async function registerUser(
 // ---------------------------------------------------------------------------
 const groupSchema = z.object({
   name: z.string().trim().min(1, "Grup adı gerekli").max(100),
-  type: z.enum(["Tatil", "Girisim"]),
   currency: z.enum(["TRY", "USD", "EUR", "GBP"]),
 });
 
@@ -84,7 +83,6 @@ export async function createGroup(
 
   const parsed = groupSchema.safeParse({
     name: formData.get("name"),
-    type: formData.get("type"),
     currency: formData.get("currency"),
   });
   if (!parsed.success) {
@@ -96,6 +94,7 @@ export async function createGroup(
   const group = await prisma.group.create({
     data: {
       ...parsed.data,
+      type: "Tatil",
       createdById: session.user.id,
       members: { create: { userId: session.user.id } },
     },
@@ -122,8 +121,11 @@ export async function addMember(
 
   const member = await prisma.groupMember.findFirst({
     where: { groupId, userId: session.user.id },
+    include: { group: true },
   });
   if (!member) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (member.group.type === "Kisisel")
+    return { ok: false, error: "Kişisel bütçe grubuna üye eklenemez." };
 
   const name = username.trim();
   if (!name) return { ok: false, error: "Kullanıcı adı boş olamaz." };
@@ -167,9 +169,11 @@ export async function addExpense(input: {
   amount: number; // in group currency
   payerId: string;
   date: string;
-  splitType: "Equal" | "Exact" | "Ratio";
+  splitType: "Equal" | "Exact";
   participantIds: string[];
   exactAmounts?: Record<string, number>;
+  /** "income" only allowed in personal budget groups. */
+  kind?: "expense" | "income";
   // Optional multi-currency record: what was originally entered.
   originalAmount?: number;
   originalCurrency?: string;
@@ -199,8 +203,15 @@ export async function addExpense(input: {
   if (participants.length === 0)
     return { ok: false, error: "En az bir katılımcı seçmelisiniz." };
 
+  const kind = input.kind === "income" ? "income" : "expense";
+  if (kind === "income" && group.type !== "Kisisel")
+    return { ok: false, error: "Gelir yalnızca kişisel bütçeye eklenebilir." };
+
   let shares: { userId: string; amount: number }[];
-  if (input.splitType === "Exact") {
+  if (kind === "income") {
+    // Income is balance-neutral: the payer "receives" their own amount.
+    shares = [{ userId: input.payerId, amount }];
+  } else if (input.splitType === "Exact") {
     shares = participants.map((userId) => ({
       userId,
       amount: Math.round((input.exactAmounts?.[userId] ?? 0) * 100) / 100,
@@ -211,17 +222,6 @@ export async function addExpense(input: {
         ok: false,
         error: `Payların toplamı (${sum.toFixed(2)}) tutara (${amount.toFixed(2)}) eşit olmalı.`,
       };
-  } else if (input.splitType === "Ratio") {
-    const ratioById = new Map(
-      group.members.map((m) => [m.userId, m.shareRatio ?? 0]),
-    );
-    shares = ratioShares(
-      amount,
-      participants.map((userId) => ({
-        userId,
-        ratio: ratioById.get(userId) ?? 0,
-      })),
-    );
   } else {
     shares = equalShares(amount, participants);
   }
@@ -240,6 +240,7 @@ export async function addExpense(input: {
       description: input.description.trim(),
       category: input.category?.trim() || null,
       date: new Date(input.date),
+      kind,
       splitType: input.splitType,
       originalAmount: hasFx ? input.originalAmount ?? null : null,
       originalCurrency: hasFx ? input.originalCurrency ?? null : null,
@@ -252,17 +253,22 @@ export async function addExpense(input: {
     groupId: input.groupId,
     actorId: session.user.id,
     type: "expense.add",
-    summary: `"${created.description}" harcaması eklendi`,
+    summary:
+      kind === "income"
+        ? `"${created.description}" geliri eklendi`
+        : `"${created.description}" harcaması eklendi`,
     meta: { amount, expenseId: created.id },
   });
 
-  await notifyGroupMembers({
-    groupId: input.groupId,
-    exceptUserId: session.user.id,
-    type: "expense.add",
-    title: `${session.user.name ?? "Bir üye"} harcama ekledi`,
-    body: `"${created.description}" — ${amount.toFixed(2)} ${group.currency}`,
-  });
+  if (group.type !== "Kisisel") {
+    await notifyGroupMembers({
+      groupId: input.groupId,
+      exceptUserId: session.user.id,
+      type: "expense.add",
+      title: `${session.user.name ?? "Bir üye"} harcama ekledi`,
+      body: `"${created.description}" — ${amount.toFixed(2)} ${group.currency}`,
+    });
+  }
 
   revalidatePath(`/groups/${input.groupId}`);
   revalidatePath("/dashboard");
@@ -782,8 +788,11 @@ export async function createInvite(groupId: string): Promise<ActionState> {
 
   const member = await prisma.groupMember.findFirst({
     where: { groupId, userId: session.user.id },
+    include: { group: true },
   });
   if (!member) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (member.group.type === "Kisisel")
+    return { ok: false, error: "Kişisel bütçe grubuna davet oluşturulamaz." };
 
   const token = randomBytes(16).toString("hex");
   await prisma.invite.create({
@@ -802,9 +811,14 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
 
-  const invite = await prisma.invite.findUnique({ where: { token } });
+  const invite = await prisma.invite.findUnique({
+    where: { token },
+    include: { group: true },
+  });
   if (!invite || !invite.active)
     return { ok: false, error: "Davet linki geçersiz." };
+  if (invite.group.type === "Kisisel")
+    return { ok: false, error: "Bu gruba katılım kapalı." };
   if (invite.expiresAt && invite.expiresAt < new Date())
     return { ok: false, error: "Davet linkinin süresi dolmuş." };
   if (invite.maxUses != null && invite.uses >= invite.maxUses)
@@ -837,35 +851,49 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
 }
 
 // ---------------------------------------------------------------------------
-// Venture (Girisim) ownership ratios — owner only
+// Group deletion (owner only) & personal budget
 // ---------------------------------------------------------------------------
-export async function setShareRatios(
-  groupId: string,
-  ratios: Record<string, number>,
-): Promise<ActionState> {
+export async function deleteGroup(groupId: string): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
 
-  const group = await prisma.group.findUnique({
-    where: { id: groupId },
-    include: { members: true },
-  });
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
   if (!group) return { ok: false, error: "Grup bulunamadı." };
   if (group.createdById !== session.user.id)
-    return { ok: false, error: "Oranları yalnızca grup sahibi belirleyebilir." };
+    return { ok: false, error: "Grubu yalnızca kuran kişi silebilir." };
 
-  await prisma.$transaction(
-    group.members.map((m) => {
-      const r = ratios[m.userId];
-      return prisma.groupMember.update({
-        where: { id: m.id },
-        data: { shareRatio: Number.isFinite(r) && r > 0 ? r : null },
-      });
-    }),
-  );
+  await prisma.group.delete({ where: { id: groupId } }); // cascades everything
 
-  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
   return { ok: true };
+}
+
+/** Finds (or creates) the user's single personal budget group. */
+export async function ensurePersonalBudget(): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const existing = await prisma.group.findFirst({
+    where: {
+      type: "Kisisel",
+      createdById: session.user.id,
+      members: { some: { userId: session.user.id } },
+    },
+  });
+  if (existing) return { ok: true, groupId: existing.id };
+
+  const group = await prisma.group.create({
+    data: {
+      name: "Kişisel Bütçe",
+      type: "Kisisel",
+      currency: "TRY",
+      createdById: session.user.id,
+      members: { create: { userId: session.user.id } },
+    },
+  });
+
+  return { ok: true, groupId: group.id };
 }
 
 // ---------------------------------------------------------------------------

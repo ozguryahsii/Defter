@@ -50,7 +50,8 @@ export function AddExpenseDialog({
   currentUserId,
   expense,
   trigger,
-  groupType = "Tatil",
+  personal = false,
+  mode = "expense",
 }: {
   groupId: string;
   currency: string;
@@ -58,11 +59,15 @@ export function AddExpenseDialog({
   currentUserId: string;
   expense?: EditExpenseInit;
   trigger?: React.ReactNode;
-  groupType?: string;
+  /** Personal budget group: single member, no payer/participant/split UI. */
+  personal?: boolean;
+  /** "income" renders the simplified income form (personal budget only). */
+  mode?: "expense" | "income";
 }) {
   const router = useRouter();
   const isEdit = !!expense;
-  const isVenture = groupType === "Girisim";
+  const isIncome = mode === "income";
+  const simple = personal || isIncome;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -73,7 +78,7 @@ export function AddExpenseDialog({
   const [date, setDate] = useState(
     expense?.date ?? new Date().toISOString().slice(0, 10),
   );
-  const [splitType, setSplitType] = useState<"Equal" | "Exact" | "Ratio">(
+  const [splitType, setSplitType] = useState<"Equal" | "Exact">(
     expense?.splitType ?? "Equal",
   );
   const [participants, setParticipants] = useState<string[]>(
@@ -157,7 +162,7 @@ export function AddExpenseDialog({
           amount: numericAmount,
           payerId,
           date,
-          splitType: splitType === "Ratio" ? "Equal" : splitType,
+          splitType,
           participantIds: participants,
           exactAmounts,
         })
@@ -166,10 +171,11 @@ export function AddExpenseDialog({
           description,
           category: category || undefined,
           amount: numericAmount,
-          payerId,
+          payerId: simple ? currentUserId : payerId,
           date,
-          splitType,
-          participantIds: participants,
+          splitType: simple ? "Equal" : splitType,
+          participantIds: simple ? [currentUserId] : participants,
+          kind: isIncome ? "income" : "expense",
           originalAmount: isForeign ? enteredAmount : undefined,
           originalCurrency: isForeign ? entryCurrency : undefined,
           fxRate: isForeign ? rate : undefined,
@@ -181,7 +187,13 @@ export function AddExpenseDialog({
       toast.error(res.error ?? "İşlem başarısız.");
       return;
     }
-    toast.success(isEdit ? "Harcama güncellendi." : "Harcama eklendi.");
+    toast.success(
+      isEdit
+        ? "Kayıt güncellendi."
+        : isIncome
+          ? "Gelir eklendi."
+          : "Harcama eklendi.",
+    );
     if (!isEdit) reset(); // clear the form so the next "add" starts fresh
     setOpen(false);
     router.refresh();
@@ -197,16 +209,26 @@ export function AddExpenseDialog({
     >
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="brand">
-            <Plus /> Harcama Ekle
+          <Button variant={isIncome ? "outline" : "brand"}>
+            <Plus /> {isIncome ? "Gelir Ekle" : "Harcama Ekle"}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Harcamayı Düzenle" : "Harcama Ekle"}</DialogTitle>
+          <DialogTitle>
+            {isEdit
+              ? "Kaydı Düzenle"
+              : isIncome
+                ? "Gelir Ekle"
+                : "Harcama Ekle"}
+          </DialogTitle>
           <DialogDescription>
-            Tutarı gir, kimlerin dahil olduğunu seç. Borç tablosu anında güncellenir.
+            {isIncome
+              ? "Bütçene giren parayı kaydet (maaş, ek gelir vb.)."
+              : simple
+                ? "Tutarı gir; bütçe özeti anında güncellenir."
+                : "Tutarı gir, kimlerin dahil olduğunu seç. Borç tablosu anında güncellenir."}
           </DialogDescription>
         </DialogHeader>
 
@@ -217,7 +239,7 @@ export function AddExpenseDialog({
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Örn. Akşam yemeği"
+              placeholder={isIncome ? "Örn. Maaş" : "Örn. Akşam yemeği"}
               required
               autoFocus
             />
@@ -294,22 +316,24 @@ export function AddExpenseDialog({
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Ödeyen</Label>
-              <Select value={payerId} onValueChange={setPayerId}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => (
-                    <SelectItem key={m.userId} value={m.userId}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className={cn("grid gap-3", !simple && "sm:grid-cols-2")}>
+            {!simple && (
+              <div className="space-y-2">
+                <Label>Ödeyen</Label>
+                <Select value={payerId} onValueChange={setPayerId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.userId} value={m.userId}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="date">Tarih</Label>
               <Input
@@ -318,51 +342,40 @@ export function AddExpenseDialog({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
+              {simple && !isIncome && (
+                <p className="text-xs text-muted-foreground">
+                  İleri tarih girersen, 2 gün ve 1 gün kala sana hatırlatırız.
+                </p>
+              )}
             </div>
           </div>
 
           {/* Split type toggle */}
-          <div className="space-y-2">
-            <Label>Bölüşüm</Label>
-            <div
-              className={cn(
-                "grid gap-2 rounded-xl border border-border/60 bg-muted/40 p-1",
-                isVenture && !isEdit ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
-              {(isVenture && !isEdit
-                ? (["Equal", "Exact", "Ratio"] as const)
-                : (["Equal", "Exact"] as const)
-              ).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setSplitType(t)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                    splitType === t
-                      ? "bg-background text-foreground shadow-soft"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {t === "Equal"
-                    ? "Eşit böl"
-                    : t === "Exact"
-                      ? "Özel tutarlar"
-                      : "Oranla böl"}
-                </button>
-              ))}
+          {!simple && (
+            <div className="space-y-2">
+              <Label>Bölüşüm</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-muted/40 p-1">
+                {(["Equal", "Exact"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSplitType(t)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                      splitType === t
+                        ? "bg-background text-foreground shadow-soft"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {t === "Equal" ? "Eşit böl" : "Özel tutarlar"}
+                  </button>
+                ))}
+              </div>
             </div>
-            {splitType === "Ratio" && (
-              <p className="text-xs text-muted-foreground">
-                Ortaklık oranlarına göre bölüşülür. Oranları üyeler kartından
-                grup sahibi belirler.
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Participants */}
-          <div className="space-y-2">
+          <div className={cn("space-y-2", simple && "hidden")}>
             <div className="flex items-center justify-between">
               <Label>Kimleri kapsıyor?</Label>
               {splitType === "Equal" && equalPreview !== null && (

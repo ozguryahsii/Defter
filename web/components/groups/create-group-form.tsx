@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Plane, Rocket } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createGroup } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,27 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-
-const TYPES = [
-  {
-    value: "Tatil",
-    label: "Tatil / Arkadaş grubu",
-    desc: "Masraflar genelde eşit bölüşülür",
-    icon: Plane,
-  },
-  {
-    value: "Girisim",
-    label: "Ortak girişim",
-    desc: "Ortaklık ve adil hesaplaşma",
-    icon: Rocket,
-  },
-];
 
 export function CreateGroupForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState("Tatil");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,7 +26,6 @@ export function CreateGroupForm() {
     setLoading(true);
     setErrors({});
     const form = new FormData(e.currentTarget);
-    form.set("type", type);
 
     const res = await createGroup({ ok: false }, form);
     if (!res.ok || !res.groupId) {
@@ -69,44 +51,6 @@ export function CreateGroupForm() {
           autoFocus
         />
         {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-      </div>
-
-      <div className="space-y-2">
-        <Label>Tür</Label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {TYPES.map((t) => {
-            const Icon = t.icon;
-            const active = type === t.value;
-            return (
-              <button
-                type="button"
-                key={t.value}
-                onClick={() => setType(t.value)}
-                className={cn(
-                  "flex items-start gap-3 rounded-xl border p-4 text-left transition-all",
-                  active
-                    ? "border-brand/50 bg-brand/5 ring-1 ring-brand/40"
-                    : "border-border/60 hover:border-border hover:bg-secondary/40",
-                )}
-              >
-                <span
-                  className={cn(
-                    "grid h-10 w-10 place-items-center rounded-lg border border-border/60",
-                    active ? "bg-brand/10 text-brand" : "text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-medium">{t.label}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t.desc}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       <div className="space-y-2">

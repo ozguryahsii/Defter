@@ -51,8 +51,8 @@ export default async function GroupReportPage({
       <div className="border-b border-border/60 pb-4">
         <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {group.type === "Girisim" ? "Ortak Girişim" : "Tatil / Grup"} ·{" "}
-          {group.members.length} üye · {formatDate(new Date())} tarihli rapor
+          {group.type === "Kisisel" ? "Kişisel Bütçe" : "Tatil / Arkadaş Grubu"}{" "}
+          · {group.members.length} üye · {formatDate(new Date())} tarihli rapor
         </p>
       </div>
 

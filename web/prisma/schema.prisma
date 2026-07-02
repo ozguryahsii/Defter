@@ -49,7 +49,7 @@ model Notification {
 model Group {
   id          String   @id @default(cuid())
   name        String
-  type        String   @default("Tatil") // "Tatil" | "Girisim"
+  type        String   @default("Tatil") // "Tatil" | "Kisisel" (kişisel bütçe)
   currency    String   @default("TRY")
   createdById String
   createdAt   DateTime @default(now())
@@ -88,7 +88,8 @@ model Expense {
   description String
   category    String?
   date        DateTime @default(now())
-  splitType   String   @default("Equal") // "Equal" | "Exact" | "Ratio"
+  kind        String   @default("expense") // "expense" | "income" (income: personal budget only)
+  splitType   String   @default("Equal") // "Equal" | "Exact"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

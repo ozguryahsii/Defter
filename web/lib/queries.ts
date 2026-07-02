@@ -125,7 +125,11 @@ const MONTH_LABELS = [
 ];
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const groups = await loadUserGroups(userId);
+  // Personal budget groups live on their own screen; the dashboard is for
+  // shared groups only.
+  const groups = (await loadUserGroups(userId)).filter(
+    (g) => g.type !== "Kisisel",
+  );
   const summaries = groups.map((g) => summarize(g, userId));
 
   const totalSpent = summaries.reduce((s, g) => s + g.total, 0);
@@ -328,7 +332,7 @@ export async function getGroupDetail(
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthSpend = group.expenses
-    .filter((e) => new Date(e.date) >= monthStart)
+    .filter((e) => e.kind !== "income" && new Date(e.date) >= monthStart)
     .reduce((s, e) => s + e.amount, 0);
 
   return {
@@ -345,5 +349,7 @@ export async function getGroupDetail(
 
 export async function getGroupsList(userId: string): Promise<GroupSummary[]> {
   const groups = await loadUserGroups(userId);
-  return groups.map((g) => summarize(g, userId));
+  return groups
+    .filter((g) => g.type !== "Kisisel")
+    .map((g) => summarize(g, userId));
 }

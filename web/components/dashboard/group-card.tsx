@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Plane, Rocket } from "lucide-react";
+import { ArrowUpRight, Plane } from "lucide-react";
 import { SpotlightCard } from "@/components/magic/spotlight-card";
 import { AvatarStack } from "./avatar-stack";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,7 @@ import type { GroupSummary } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 export function GroupCard({ group }: { group: GroupSummary }) {
-  const isVenture = group.type === "Girisim";
-  const Icon = isVenture ? Rocket : Plane;
+  const Icon = Plane;
   const balance = group.yourBalance;
   const settled = Math.abs(balance) < 0.005;
 
@@ -30,11 +29,8 @@ export function GroupCard({ group }: { group: GroupSummary }) {
               </span>
               <div>
                 <h3 className="font-semibold leading-tight">{group.name}</h3>
-                <Badge
-                  variant={isVenture ? "brand" : "secondary"}
-                  className="mt-1"
-                >
-                  {isVenture ? "Girişim" : "Tatil"}
+                <Badge variant="secondary" className="mt-1">
+                  Tatil / Arkadaş
                 </Badge>
               </div>
             </div>

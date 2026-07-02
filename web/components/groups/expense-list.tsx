@@ -31,6 +31,7 @@ export type ExpenseItem = {
   payerName: string;
   splitType: string;
   shareCount: number;
+  kind: string; // "expense" | "income"
   canDelete: boolean;
   canEdit: boolean;
   receiptPath: string | null;
@@ -46,12 +47,14 @@ export function ExpenseList({
   members,
   currentUserId,
   groupId,
+  personal = false,
 }: {
   items: ExpenseItem[];
   currency: string;
   members: Member[];
   currentUserId: string;
   groupId: string;
+  personal?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -130,7 +133,9 @@ export function ExpenseList({
               )}
             </div>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span>{e.payerName} ödedi</span>
+              <span>
+                {e.kind === "income" ? "gelir" : `${e.payerName} ödedi`}
+              </span>
               <span>·</span>
               <span>{formatDate(e.date)}</span>
               <span className="hidden items-center gap-1 sm:inline-flex">
@@ -150,7 +155,14 @@ export function ExpenseList({
           </div>
 
           <div className="flex items-center gap-0.5">
-            <span className="mr-1 text-sm font-semibold tabular-nums">
+            <span
+              className={
+                e.kind === "income"
+                  ? "mr-1 text-sm font-semibold tabular-nums text-success"
+                  : "mr-1 text-sm font-semibold tabular-nums"
+              }
+            >
+              {e.kind === "income" ? "+" : ""}
               {formatCurrency(e.amount, currency)}
             </span>
 
@@ -191,6 +203,8 @@ export function ExpenseList({
                   members={members}
                   currentUserId={currentUserId}
                   expense={e.editInit}
+                  personal={personal}
+                  mode={e.kind === "income" ? "income" : "expense"}
                   trigger={
                     <Button
                       variant="ghost"

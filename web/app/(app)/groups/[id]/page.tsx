@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, FileText, Plane, Rocket, Users, Wallet } from "lucide-react";
+import {
+  ArrowDownCircle,
+  ArrowLeft,
+  ArrowUpCircle,
+  FileText,
+  PiggyBank,
+  Plane,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getGroupDetail } from "@/lib/queries";
 import { formatCurrency, formatDate, initials } from "@/lib/format";
@@ -18,7 +27,9 @@ import { InviteButton } from "@/components/groups/invite-button";
 import { ExpenseList } from "@/components/groups/expense-list";
 import { ActivityFeed } from "@/components/groups/activity-feed";
 import { LiveRefresh } from "@/components/groups/live-refresh";
-import { RatioEditor } from "@/components/groups/ratio-editor";
+import { BudgetCard } from "@/components/groups/budget-card";
+import { RecurringSection } from "@/components/groups/recurring-section";
+import { DeleteGroupButton } from "@/components/groups/delete-group-button";
 import { CategoryDonut } from "@/components/charts/category-donut";
 
 export const metadata: Metadata = { title: "Grup" };
@@ -33,10 +44,11 @@ export default async function GroupDetailPage({
   const detail = await getGroupDetail(params.id, userId);
   if (!detail) notFound();
 
-  const { group, settlement, total, settled, activities } = detail;
-  const isVenture = group.type === "Girisim";
+  const { group, settlement, settled, activities, recurring, monthSpend, budget } =
+    detail;
+  const isPersonal = group.type === "Kisisel";
   const isOwner = group.createdById === userId;
-  const Icon = isVenture ? Rocket : Plane;
+  const Icon = isPersonal ? PiggyBank : Plane;
 
   const members = group.members.map((m) => ({
     userId: m.userId,
@@ -56,6 +68,7 @@ export default async function GroupDetailPage({
       payerName: e.payer.displayName ?? e.payer.username,
       splitType: e.splitType,
       shareCount: e.shares.length,
+      kind: e.kind,
       canDelete: canManage,
       canEdit: canManage,
       receiptPath: e.receiptPath,
@@ -89,12 +102,18 @@ export default async function GroupDetailPage({
   const yourBalance =
     settlement.balances.find((b) => b.userId === userId)?.amount ?? 0;
 
-  const youPaid = group.expenses
+  const expensesOnly = group.expenses.filter((e) => e.kind !== "income");
+  const incomesOnly = group.expenses.filter((e) => e.kind === "income");
+  const expenseTotal = expensesOnly.reduce((s, e) => s + e.amount, 0);
+  const incomeTotal = incomesOnly.reduce((s, e) => s + e.amount, 0);
+  const remaining = incomeTotal - expenseTotal;
+
+  const youPaid = expensesOnly
     .filter((e) => e.payerId === userId)
     .reduce((s, e) => s + e.amount, 0);
 
   const categoryMap = new Map<string, number>();
-  for (const e of group.expenses) {
+  for (const e of expensesOnly) {
     const cat = e.category?.trim() || "Diğer";
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + e.amount);
   }
@@ -105,16 +124,20 @@ export default async function GroupDetailPage({
 
   return (
     <div className="space-y-6">
-      <LiveRefresh
-        groupId={group.id}
-        initialVersion={activities[0]?.createdAt.getTime() ?? 0}
-      />
-      <Link
-        href="/groups"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Gruplar
-      </Link>
+      {!isPersonal && (
+        <LiveRefresh
+          groupId={group.id}
+          initialVersion={activities[0]?.createdAt.getTime() ?? 0}
+        />
+      )}
+      {!isPersonal && (
+        <Link
+          href="/groups"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Gruplar
+        </Link>
+      )}
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -127,87 +150,124 @@ export default async function GroupDetailPage({
               {group.name}
             </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <Badge variant={isVenture ? "brand" : "secondary"}>
-                {isVenture ? "Girişim" : "Tatil"}
+              <Badge variant={isPersonal ? "brand" : "secondary"}>
+                {isPersonal ? "Kişisel" : "Tatil / Arkadaş"}
               </Badge>
               <Badge variant="outline">{group.currency}</Badge>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Users className="h-3.5 w-3.5" /> {group.members.length} üye
-              </span>
+              {!isPersonal && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" /> {group.members.length} üye
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/groups/${group.id}/report`}
             className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border/60 px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <FileText className="h-4 w-4" /> Rapor
           </Link>
+          {isPersonal && (
+            <AddExpenseDialog
+              groupId={group.id}
+              currency={group.currency}
+              members={members}
+              currentUserId={userId}
+              personal
+              mode="income"
+            />
+          )}
           <AddExpenseDialog
             groupId={group.id}
             currency={group.currency}
             members={members}
             currentUserId={userId}
-            groupType={group.type}
+            personal={isPersonal}
           />
         </div>
       </div>
 
       {/* Summary strip */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryTile
-          label="Toplam Harcama"
-          value={formatCurrency(total, group.currency)}
-          icon={<Wallet className="h-4 w-4" />}
-        />
-        <SummaryTile
-          label="Senin Ödediğin"
-          value={formatCurrency(youPaid, group.currency)}
-        />
-        <SummaryTile
-          label="Senin Durumun"
-          value={
-            Math.abs(yourBalance) < 0.005
-              ? "Ödeşildi"
-              : `${yourBalance > 0 ? "+" : ""}${formatCurrency(yourBalance, group.currency)}`
-          }
-          tone={
-            Math.abs(yourBalance) < 0.005
-              ? "muted"
-              : yourBalance > 0
-                ? "success"
-                : "destructive"
-          }
-        />
-        <SummaryTile
-          label="Bekleyen Ödeşme"
-          value={`${settlement.transfers.length} işlem`}
-        />
-      </div>
+      {isPersonal ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <SummaryTile
+            label="Gelir"
+            value={formatCurrency(incomeTotal, group.currency)}
+            icon={<ArrowUpCircle className="h-4 w-4" />}
+            tone="success"
+          />
+          <SummaryTile
+            label="Gider"
+            value={formatCurrency(expenseTotal, group.currency)}
+            icon={<ArrowDownCircle className="h-4 w-4" />}
+            tone="destructive"
+          />
+          <SummaryTile
+            label="Kalan"
+            value={formatCurrency(remaining, group.currency)}
+            icon={<Wallet className="h-4 w-4" />}
+            tone={remaining >= 0 ? "success" : "destructive"}
+          />
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryTile
+            label="Toplam Harcama"
+            value={formatCurrency(expenseTotal, group.currency)}
+            icon={<Wallet className="h-4 w-4" />}
+          />
+          <SummaryTile
+            label="Senin Ödediğin"
+            value={formatCurrency(youPaid, group.currency)}
+          />
+          <SummaryTile
+            label="Senin Durumun"
+            value={
+              Math.abs(yourBalance) < 0.005
+                ? "Ödeşildi"
+                : `${yourBalance > 0 ? "+" : ""}${formatCurrency(yourBalance, group.currency)}`
+            }
+            tone={
+              Math.abs(yourBalance) < 0.005
+                ? "muted"
+                : yourBalance > 0
+                  ? "success"
+                  : "destructive"
+            }
+          />
+          <SummaryTile
+            label="Bekleyen Ödeşme"
+            value={`${settlement.transfers.length} işlem`}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Main column */}
         <div className="space-y-4 lg:col-span-2">
-          <Reveal>
-            <SectionCard
-              title="Borç Durumu"
-              description="Minimum transferle nasıl ödeşilir — ödemeyi yalnızca alacaklı onaylar"
-            >
-              <GroupSettlement
-                groupId={group.id}
-                transfers={settlement.transfers}
-                settled={settled}
-                currency={group.currency}
-                currentUserId={userId}
-                payInfo={payInfo}
-              />
-            </SectionCard>
-          </Reveal>
+          {!isPersonal && (
+            <Reveal>
+              <SectionCard
+                title="Borç Durumu"
+                description="Minimum transferle nasıl ödeşilir — ödemeyi yalnızca alacaklı onaylar"
+              >
+                <GroupSettlement
+                  groupId={group.id}
+                  transfers={settlement.transfers}
+                  settled={settled}
+                  currency={group.currency}
+                  currentUserId={userId}
+                  payInfo={payInfo}
+                />
+              </SectionCard>
+            </Reveal>
+          )}
 
           <Reveal delay={0.05}>
             <SectionCard
-              title="Harcamalar"
+              title={isPersonal ? "Gelir & Giderler" : "Harcamalar"}
               description={`${group.expenses.length} kayıt`}
             >
               <ExpenseList
@@ -216,6 +276,7 @@ export default async function GroupDetailPage({
                 members={members}
                 currentUserId={userId}
                 groupId={group.id}
+                personal={isPersonal}
               />
             </SectionCard>
           </Reveal>
@@ -223,6 +284,20 @@ export default async function GroupDetailPage({
 
         {/* Side column */}
         <div className="space-y-4">
+          {isPersonal && (
+            <Reveal delay={0.06}>
+              <SectionCard title="Bütçe" description="Aylık harcama hedefin">
+                <BudgetCard
+                  groupId={group.id}
+                  currency={group.currency}
+                  monthSpend={monthSpend}
+                  budget={budget}
+                  isOwner={isOwner}
+                />
+              </SectionCard>
+            </Reveal>
+          )}
+
           <Reveal delay={0.08}>
             <SectionCard title="Kategori Dağılımı" description="Nereye harcandı?">
               {categoryBreakdown.length ? (
@@ -238,30 +313,30 @@ export default async function GroupDetailPage({
             </SectionCard>
           </Reveal>
 
-          <Reveal delay={0.1}>
-            <SectionCard title="Net Bakiyeler" description="Kim ne durumda">
-              <BalanceList
-                balances={settlement.balances}
-                currency={group.currency}
-                currentUserId={userId}
-              />
-            </SectionCard>
-          </Reveal>
-
-          {isVenture && (
-            <Reveal delay={0.12}>
+          {isPersonal && (
+            <Reveal delay={0.1}>
               <SectionCard
-                title="Ortaklık Oranları"
-                description="Oranla bölüşüm için pay ağırlıkları"
+                title="Tekrarlayan"
+                description="Kira, abonelik gibi düzenli giderler"
               >
-                <RatioEditor
+                <RecurringSection
                   groupId={group.id}
-                  isOwner={isOwner}
-                  members={group.members.map((m) => ({
-                    userId: m.userId,
-                    name: m.user.displayName ?? m.user.username,
-                    ratio: m.shareRatio ?? null,
-                  }))}
+                  currency={group.currency}
+                  items={recurring}
+                  members={members}
+                  currentUserId={userId}
+                />
+              </SectionCard>
+            </Reveal>
+          )}
+
+          {!isPersonal && (
+            <Reveal delay={0.1}>
+              <SectionCard title="Net Bakiyeler" description="Kim ne durumda">
+                <BalanceList
+                  balances={settlement.balances}
+                  currency={group.currency}
+                  currentUserId={userId}
                 />
               </SectionCard>
             </Reveal>
@@ -273,44 +348,52 @@ export default async function GroupDetailPage({
             </SectionCard>
           </Reveal>
 
-          <Reveal delay={0.15}>
-            <SectionCard title={`Üyeler (${group.members.length})`}>
-              <ul className="space-y-2.5">
-                {group.members.map((m) => {
-                  const name = m.user.displayName ?? m.user.username;
-                  return (
-                    <li key={m.userId} className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-[10px]">
-                          {initials(name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="flex-1 truncate text-sm">{name}</span>
-                      {m.userId === group.createdById && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          sahip
-                        </Badge>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-              <Separator className="my-4" />
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
-                Kullanıcı adına göre üye ekle
-              </p>
-              <AddMemberForm groupId={group.id} />
-              <div className="mt-3">
-                <InviteButton groupId={group.id} />
-              </div>
-            </SectionCard>
-          </Reveal>
+          {!isPersonal && (
+            <Reveal delay={0.15}>
+              <SectionCard title={`Üyeler (${group.members.length})`}>
+                <ul className="space-y-2.5">
+                  {group.members.map((m) => {
+                    const name = m.user.displayName ?? m.user.username;
+                    return (
+                      <li key={m.userId} className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-[10px]">
+                            {initials(name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 truncate text-sm">{name}</span>
+                        {m.userId === group.createdById && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            sahip
+                          </Badge>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Separator className="my-4" />
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  Kullanıcı adına göre üye ekle
+                </p>
+                <AddMemberForm groupId={group.id} />
+                <div className="mt-3">
+                  <InviteButton groupId={group.id} />
+                </div>
+              </SectionCard>
+            </Reveal>
+          )}
         </div>
       </div>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Grup {formatDate(group.createdAt)} tarihinde oluşturuldu.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {isPersonal ? "Bütçe" : "Grup"} {formatDate(group.createdAt)}{" "}
+          tarihinde oluşturuldu.
+        </p>
+        {isOwner && !isPersonal && (
+          <DeleteGroupButton groupId={group.id} groupName={group.name} />
+        )}
+      </div>
     </div>
   );
 }
