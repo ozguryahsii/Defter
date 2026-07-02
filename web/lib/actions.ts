@@ -452,6 +452,100 @@ export async function updateProfile(
 }
 
 // ---------------------------------------------------------------------------
+// Account security: change password & delete account (store requirements)
+// ---------------------------------------------------------------------------
+export async function changePassword(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const current = String(formData.get("currentPassword") ?? "");
+  const next = String(formData.get("newPassword") ?? "");
+  const confirm = String(formData.get("confirmPassword") ?? "");
+
+  if (next.length < 8)
+    return { ok: false, fieldErrors: { newPassword: "En az 8 karakter olmalı." } };
+  if (next !== confirm)
+    return { ok: false, fieldErrors: { confirmPassword: "Parolalar eşleşmiyor." } };
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) return { ok: false, error: "Kullanıcı bulunamadı." };
+
+  const valid = await bcrypt.compare(current, user.passwordHash);
+  if (!valid)
+    return { ok: false, fieldErrors: { currentPassword: "Mevcut parola hatalı." } };
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(next, 12) },
+  });
+
+  return { ok: true };
+}
+
+/**
+ * Deletes the account (store compliance). Personal data is removed; shared
+ * group ledgers stay consistent:
+ *  - groups where the user is the ONLY member are deleted entirely,
+ *  - in shared groups the user's rows remain but are anonymised
+ *    ("Silinen Kullanıcı", credentials/IBAN wiped, login impossible).
+ */
+export async function deleteAccount(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const password = String(formData.get("password") ?? "");
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) return { ok: false, error: "Kullanıcı bulunamadı." };
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid)
+    return { ok: false, fieldErrors: { password: "Parola hatalı." } };
+
+  // Groups where this user is the only member -> remove completely
+  // (cascade cleans expenses, settlements, activities, invites, recurring).
+  const memberships = await prisma.groupMember.findMany({
+    where: { userId: user.id },
+    select: { groupId: true },
+  });
+  const soloGroupIds: string[] = [];
+  for (const m of memberships) {
+    const count = await prisma.groupMember.count({ where: { groupId: m.groupId } });
+    if (count === 1) soloGroupIds.push(m.groupId);
+  }
+
+  const randomSuffix = Math.random().toString(36).slice(2, 8);
+  await prisma.$transaction([
+    prisma.group.deleteMany({ where: { id: { in: soloGroupIds } } }),
+    prisma.invite.updateMany({
+      where: { createdById: user.id },
+      data: { active: false },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        username: `silinen_${randomSuffix}`,
+        displayName: "Silinen Kullanıcı",
+        iban: null,
+        ibanName: null,
+        // Random hash: login becomes impossible.
+        passwordHash: await bcrypt.hash(
+          `deleted-${Date.now()}-${Math.random()}`,
+          12,
+        ),
+      },
+    }),
+  ]);
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Edit expense (payer or group owner)
 // ---------------------------------------------------------------------------
 export async function editExpense(input: {

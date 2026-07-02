@@ -97,6 +97,18 @@ export function RegisterForm() {
         Kayıt ol
       </Button>
 
+      <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+        Kayıt olarak{" "}
+        <Link href="/terms" className="underline hover:text-foreground">
+          Kullanım Şartları
+        </Link>
+        &apos;nı ve{" "}
+        <Link href="/privacy" className="underline hover:text-foreground">
+          Gizlilik Politikası
+        </Link>
+        &apos;nı kabul etmiş olursun.
+      </p>
+
       <p className="pt-2 text-center text-sm text-muted-foreground">
         Zaten hesabın var mı?{" "}
         <Link href="/login" className="font-medium text-primary hover:underline">

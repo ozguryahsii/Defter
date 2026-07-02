@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { ChangePasswordForm } from "@/components/profile/change-password-form";
+import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 
 export const metadata: Metadata = { title: "Profil" };
 
@@ -37,6 +39,15 @@ export default async function ProfilePage() {
           }}
         />
       </SectionCard>
+
+      <SectionCard
+        title="Parola Değiştir"
+        description="Hesap güvenliğin için güçlü bir parola kullan"
+      >
+        <ChangePasswordForm />
+      </SectionCard>
+
+      <DeleteAccountCard />
     </div>
   );
 }
