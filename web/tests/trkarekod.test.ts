@@ -2,48 +2,69 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildFastKarekod, crc16ccitt } from "../lib/trkarekod";
 
+// Minimal TLV reader for assertions (2-digit tag + 2-digit length).
+function parseTlv(s: string): Map<string, string> {
+  const out = new Map<string, string>();
+  let i = 0;
+  while (i + 4 <= s.length) {
+    const tag = s.slice(i, i + 2);
+    const len = parseInt(s.slice(i + 2, i + 4), 10);
+    out.set(tag, s.slice(i + 4, i + 4 + len));
+    i += 4 + len;
+  }
+  return out;
+}
+
 test("crc16ccitt matches the official EMVCo QRCPS example vector", () => {
-  // From the EMV QR Code Specification (MPM) Annex: this exact payload's CRC
-  // is documented as A13A. Validates poly 0x1021 / init 0xFFFF over UTF-8.
   const payload =
     "00020101021229300012D156000000000510A93FO3230Q31280012D15600000001030812345678520441115802CN5914BEST TRANSPORT6007BEIJING64200002ZH0104最佳运输0202北京540523.7253031565502016233030412340603***0708A60086670902ME91320016A011223344998877070812345678" +
     "6304";
   assert.equal(crc16ccitt(payload), "A13A");
 });
 
-test("buildFastKarekod produces a well-formed TLV payload", () => {
-  const iban = "TR610006400000110117102293"; // TR + 24 digits
-  const qr = buildFastKarekod({ iban, name: "Hüsnü Apak", amount: 8458 });
+test("payload mirrors the bank TR Karekod layout (with amount)", () => {
+  const iban = "TR610006400000110117102293"; // bank code 00064
+  const qr = buildFastKarekod({ iban, name: "Hüsnü Apak", amount: 2000 });
+  const fields = parseTlv(qr);
 
-  assert.ok(qr.startsWith("000201"), "payload format indicator");
-  assert.ok(qr.includes("0102" + "12"), "dynamic initiation when amount set");
-  // FAST P2P template is ID 30: GUID + IBAN + flow type 03.
-  const account = "0011TR.GOV.TCMB" + "0126" + iban + "020203";
-  assert.ok(
-    qr.includes("30" + String(account.length).padStart(2, "0") + account),
-    "template 30 with GUID + IBAN + flow type 03",
-  );
-  assert.ok(qr.includes("5303949"), "TRY currency 949");
-  assert.ok(qr.includes("54078458.00"), "amount 8458.00");
-  assert.ok(qr.includes("5802TR"), "country TR");
-  assert.ok(/6304[0-9A-F]{4}$/.test(qr), "ends with 4-hex CRC");
+  assert.equal(fields.get("75"), "10", "header 7502 10");
+  assert.equal(fields.get("01"), "11", "initiation 11");
+  assert.equal(fields.get("02"), "0064", "participant code from IBAN");
+  assert.match(fields.get("03") ?? "", /^\d{12}$/, "12-digit reference");
+  assert.equal(fields.get("54"), "000000200000", "2000 TRY as 12-digit kuruş");
+  assert.match(fields.get("20") ?? "", /^[0-9a-f]{32}$/, "32-hex unique id");
+  assert.match(fields.get("63") ?? "", /^[0-9A-F]{4}$/, "CRC hex");
 
-  // Recompute the CRC over everything before the CRC value itself.
-  const body = qr.slice(0, -4);
-  assert.equal(qr.slice(-4), crc16ccitt(body));
+  // Recipient template 61: IBAN + ASCII name + flow type 03.
+  const sub = parseTlv(fields.get("61") ?? "");
+  assert.equal(sub.get("01"), iban);
+  assert.equal(sub.get("07"), "Husnu Apak", "name transliterated to ASCII");
+  assert.equal(sub.get("10"), "03", "P2P flow type");
+
+  // CRC is self-consistent (computed over payload incl. "6304").
+  assert.equal(qr.slice(-4), crc16ccitt(qr.slice(0, -4)));
 });
 
-test("static code when no amount; name is sanitized and clamped", () => {
+test("free-amount code omits tag 54", () => {
   const qr = buildFastKarekod({
     iban: "tr61 0006 4000 0011 1711 0222 93",
-    name: "  Çok  Uzun İsimli Bir Alıcı Adı Örneği ***  ",
+    name: "Özgür Adnan Yahşi",
   });
-  assert.ok(qr.includes("0102" + "11"), "static initiation without amount");
-  // No amount tag: "54" must not directly follow the currency field.
-  assert.ok(!qr.includes("530394954"), "no amount tag 54 after currency");
-  // name tag 59 exists and is <= 25 chars
-  const m = qr.match(/59(\d{2})/);
-  assert.ok(m && Number(m[1]) <= 25);
+  const fields = parseTlv(qr);
+  assert.equal(fields.has("54"), false, "no amount tag");
+  const sub = parseTlv(fields.get("61") ?? "");
+  assert.equal(sub.get("07"), "Ozgur Adnan Yahsi");
+  assert.equal(qr.slice(-4), crc16ccitt(qr.slice(0, -4)));
+});
+
+test("kuruş rounding handles decimals", () => {
+  const qr = buildFastKarekod({
+    iban: "TR610006400000110117102293",
+    name: "Test",
+    amount: 8458.4,
+  });
+  const fields = parseTlv(qr);
+  assert.equal(fields.get("54"), "000000845840");
 });
 
 test("rejects invalid IBAN", () => {
