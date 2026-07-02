@@ -15,7 +15,7 @@ export default async function AuthLayout({
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <AuroraBackground />
       <div className="w-full max-w-md">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-2 flex justify-center">
           <Logo href="/login" size="lg" />
         </div>
         {children}

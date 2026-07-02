@@ -25,8 +25,8 @@ export function Logo({
   // boxes are intentionally large for the mark to read well.
   const dims =
     size === "lg"
-      ? { w: 480, h: 240, class: "h-40 w-auto sm:h-48" }
-      : { w: 200, h: 100, class: "h-12 w-auto" };
+      ? { w: 640, h: 320, class: "h-56 w-auto sm:h-72" }
+      : { w: 240, h: 120, class: "h-14 w-auto" };
 
   return (
     <Link
