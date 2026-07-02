@@ -25,6 +25,25 @@ model User {
   settlementsFrom Settlement[]   @relation("SettlementFrom")
   settlementsTo   Settlement[]   @relation("SettlementTo")
   activities      Activity[]     @relation("ActivityActor")
+  notifications   Notification[]
+}
+
+// In-app notification (push delivery will reuse these rows later).
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String // recipient
+  type      String // "expense.add" | "settle" | "member.add" | "payment.reminder" | "payment.due" | ...
+  title     String
+  body      String?
+  groupId   String? // deep-link target, if any
+  meta      String? // optional JSON (rate-limit keys etc.)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }
 
 model Group {

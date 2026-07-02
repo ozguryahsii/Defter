@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   ArrowRight,
+  BellRing,
   Check,
   CheckCircle2,
   Loader2,
@@ -14,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate, initials } from "@/lib/format";
-import { settleTransfer, unsettleTransfer } from "@/lib/actions";
+import { remindTransfer, settleTransfer, unsettleTransfer } from "@/lib/actions";
 import type { Transfer } from "@/lib/settlement";
 import type { SettledItem } from "@/lib/queries";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,18 @@ export function GroupSettlement({
     }
     toast.success(`${t.fromUserName} → sen: ödeme alındı olarak işaretlendi.`);
     router.refresh();
+  }
+
+  async function onRemind(t: Transfer) {
+    const key = `remind:${t.fromUserId}->${t.toUserId}`;
+    setBusy(key);
+    const res = await remindTransfer(groupId, t.fromUserId);
+    setBusy(null);
+    if (!res.ok) {
+      toast.error(res.error ?? "Hatırlatma gönderilemedi.");
+      return;
+    }
+    toast.success(`${t.fromUserName} kullanıcısına hatırlatma gönderildi.`);
   }
 
   async function onUndo(s: SettledItem) {
@@ -115,7 +128,27 @@ export function GroupSettlement({
                   <span className="text-sm font-medium">{t.toUserName}</span>
                 </div>
 
-                <span className="ml-auto text-sm font-semibold tabular-nums">
+                {/* Reminder (creditor only) sits left of the amount */}
+                {isCreditor ? (
+                  <button
+                    type="button"
+                    onClick={() => onRemind(t)}
+                    disabled={busy === `remind:${t.fromUserId}->${t.toUserId}`}
+                    className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border/60 px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground disabled:opacity-50"
+                    title="Borçluya bildirim gönder (günde 1 kez)"
+                  >
+                    {busy === `remind:${t.fromUserId}->${t.toUserId}` ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BellRing className="h-3.5 w-3.5" />
+                    )}
+                    Hatırlat
+                  </button>
+                ) : (
+                  <span className="ml-auto" />
+                )}
+
+                <span className="text-sm font-semibold tabular-nums">
                   {formatCurrency(t.amount, currency)}
                 </span>
 

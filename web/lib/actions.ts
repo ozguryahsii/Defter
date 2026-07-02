@@ -8,6 +8,7 @@ import { auth } from "./auth";
 import { randomBytes } from "crypto";
 import { equalShares, ratioShares, calculateSettlement } from "./settlement";
 import { logActivity } from "./activity";
+import { notify, notifyGroupMembers } from "./notify";
 import { saveReceipt } from "./uploads";
 import { materializeRecurring } from "./recurring";
 
@@ -142,6 +143,16 @@ export async function addMember(
     type: "member.add",
     summary: `${user.displayName ?? user.username} gruba eklendi`,
   });
+
+  const groupInfo = await prisma.group.findUnique({ where: { id: groupId } });
+  await notify({
+    userId: user.id,
+    type: "member.add",
+    title: `"${groupInfo?.name ?? "Bir grup"}" grubuna eklendin`,
+    body: `${session.user.name ?? "Bir kullanıcı"} seni gruba ekledi.`,
+    groupId,
+  });
+
   revalidatePath(`/groups/${groupId}`);
   return { ok: true };
 }
@@ -243,6 +254,14 @@ export async function addExpense(input: {
     type: "expense.add",
     summary: `"${created.description}" harcaması eklendi`,
     meta: { amount, expenseId: created.id },
+  });
+
+  await notifyGroupMembers({
+    groupId: input.groupId,
+    exceptUserId: session.user.id,
+    type: "expense.add",
+    title: `${session.user.name ?? "Bir üye"} harcama ekledi`,
+    body: `"${created.description}" — ${amount.toFixed(2)} ${group.currency}`,
   });
 
   revalidatePath(`/groups/${input.groupId}`);
@@ -366,8 +385,92 @@ export async function settleTransfer(
     meta: { fromUserId, toUserId, amount: transfer.amount },
   });
 
+  await notify({
+    userId: fromUserId,
+    type: "settle",
+    title: `${transfer.toUserName} ödemeni onayladı`,
+    body: `${transfer.amount.toFixed(2)} tutarındaki borcun kapandı. 🎉`,
+    groupId,
+  });
+
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/**
+ * "Ödeme Hatırlat": the creditor nudges the debtor with an in-app
+ * notification. Rate-limited to once per day per debt (spam guard).
+ */
+export async function remindTransfer(
+  groupId: string,
+  fromUserId: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+  const toUserId = session.user.id; // only the creditor can remind
+
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, members: { some: { userId: toUserId } } },
+    include: {
+      members: { include: { user: true } },
+      expenses: { include: { shares: true } },
+      settlements: true,
+    },
+  });
+  if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+
+  // The outstanding transfer must actually exist, creditor-side verified.
+  const { transfers } = calculateSettlement({
+    members: group.members.map((m) => ({
+      userId: m.userId,
+      userName: m.user.displayName ?? m.user.username,
+    })),
+    expenses: group.expenses.map((e) => ({
+      payerId: e.payerId,
+      amount: e.amount,
+      shares: e.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
+    })),
+    settlements: group.settlements.map((p) => ({
+      fromUserId: p.fromUserId,
+      toUserId: p.toUserId,
+      amount: p.amount,
+    })),
+  });
+  const transfer = transfers.find(
+    (t) => t.fromUserId === fromUserId && t.toUserId === toUserId,
+  );
+  if (!transfer) return { ok: false, error: "Bu borç güncel değil." };
+
+  // Rate limit: one reminder per debt per day.
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const metaKey = JSON.stringify({ groupId, fromUserId, toUserId });
+  const already = await prisma.notification.findFirst({
+    where: {
+      userId: fromUserId,
+      type: "payment.reminder",
+      meta: metaKey,
+      createdAt: { gte: dayStart },
+    },
+  });
+  if (already)
+    return {
+      ok: false,
+      error: "Bu borç için bugün zaten hatırlatma gönderdin (günde 1 kez).",
+    };
+
+  await notify({
+    userId: fromUserId,
+    type: "payment.reminder",
+    title: `${transfer.toUserName} borcunu hatırlattı`,
+    body: `"${group.name}" grubunda ${transfer.amount.toFixed(2)} ${group.currency} borcun var.`,
+    groupId,
+    meta: { groupId, fromUserId, toUserId },
+  });
+  // meta alanı rate-limit anahtarı olarak birebir aranıyor; notify JSON'u
+  // aynı sırayla yazdığı için üstteki findFirst ile uyumlu.
+
   return { ok: true };
 }
 
