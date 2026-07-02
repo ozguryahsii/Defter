@@ -24,18 +24,29 @@ require("@next/env").loadEnvConfig(webRoot, false);
 const next = require("next");
 
 const port = parseInt(process.env.PORT || "3000", 10);
-const hostname = process.env.HOST || "0.0.0.0";
+// HOST unset (or 0.0.0.0) => listen on ALL interfaces. We bind without an
+// explicit host so Node uses dual-stack (:: + IPv4), which covers both
+// 127.0.0.1 AND ::1 — important because on Windows `localhost` resolves to
+// IPv6 ::1 first, and an IPv4-only 0.0.0.0 listener would leave the browser
+// hanging. Set HOST=127.0.0.1 to restrict to loopback only.
+const host = process.env.HOST && process.env.HOST !== "0.0.0.0" ? process.env.HOST : undefined;
 
-const app = next({ dev: false, dir: webRoot, hostname, port });
+const app = next({ dev: false, dir: webRoot, hostname: host, port });
 const handle = app.getRequestHandler();
 
 app
   .prepare()
   .then(() => {
-    createServer((req, res) => handle(req, res)).listen(port, hostname, () => {
-      const shown = hostname === "0.0.0.0" ? "localhost" : hostname;
+    const server = createServer((req, res) => handle(req, res));
+    const ready = () => {
+      const shown = host || "localhost";
       console.log(`Defter production server ready on http://${shown}:${port}`);
-    });
+    };
+    if (host) {
+      server.listen(port, host, ready);
+    } else {
+      server.listen(port, ready); // all interfaces, dual-stack (IPv4 + IPv6)
+    }
   })
   .catch((err) => {
     console.error("Defter failed to start:", err);
