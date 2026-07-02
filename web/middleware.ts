@@ -12,5 +12,6 @@ export const config = {
     "/groups/:path*",
     "/profile/:path*",
     "/join/:path*",
+    "/tools/:path*",
   ],
 };
