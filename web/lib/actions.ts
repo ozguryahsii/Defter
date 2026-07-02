@@ -912,6 +912,71 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
 }
 
 // ---------------------------------------------------------------------------
+// Remove a member (owner only) — for accidental adds
+// ---------------------------------------------------------------------------
+export async function removeMember(
+  groupId: string,
+  memberUserId: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { members: { include: { user: true } } },
+  });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.createdById !== session.user.id)
+    return { ok: false, error: "Üyeyi yalnızca grubu kuran kişi çıkarabilir." };
+  if (memberUserId === group.createdById)
+    return { ok: false, error: "Grup sahibi çıkarılamaz." };
+
+  const member = group.members.find((m) => m.userId === memberUserId);
+  if (!member) return { ok: false, error: "Üye bulunamadı." };
+
+  // Guard the ledger: a member with financial records can't be removed.
+  const [expenseCount, shareCount, settlementCount] = await Promise.all([
+    prisma.expense.count({ where: { groupId, payerId: memberUserId } }),
+    prisma.expenseShare.count({
+      where: { userId: memberUserId, expense: { groupId } },
+    }),
+    prisma.settlement.count({
+      where: {
+        groupId,
+        OR: [{ fromUserId: memberUserId }, { toUserId: memberUserId }],
+      },
+    }),
+  ]);
+  if (expenseCount + shareCount + settlementCount > 0)
+    return {
+      ok: false,
+      error:
+        "Bu üyenin harcama/ödeme kayıtları var; çıkarılamaz. (Yanlış eklenen üyeler ancak kayıt oluşmadan çıkarılabilir.)",
+    };
+
+  await prisma.groupMember.deleteMany({
+    where: { groupId, userId: memberUserId },
+  });
+
+  const removedName = member.user.displayName ?? member.user.username;
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "member.add",
+    summary: `${removedName} gruptan çıkarıldı`,
+  });
+  await notify({
+    userId: memberUserId,
+    type: "member.add",
+    title: `"${group.name}" grubundan çıkarıldın`,
+    body: `${session.user.name ?? "Grup sahibi"} seni gruptan çıkardı.`,
+  });
+
+  revalidatePath(`/groups/${groupId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Archive / unarchive (owner only) & leave group
 // ---------------------------------------------------------------------------
 export async function setGroupArchived(

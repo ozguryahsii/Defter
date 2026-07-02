@@ -34,7 +34,8 @@ export function DeleteAccountCard() {
       return;
     }
     toast.success("Hesabın silindi. Güle güle 👋");
-    await signOut({ callbackUrl: "/login" });
+    await signOut({ redirect: false });
+    window.location.assign("/login");
   }
 
   return (

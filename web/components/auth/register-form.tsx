@@ -44,8 +44,9 @@ export function RegisterForm() {
       return;
     }
     toast.success("Hesabın hazır!");
-    router.push("/dashboard");
-    router.refresh();
+    // Tam sayfa yönlendirme: mobilde client-side push oturum çerezinden
+    // önce koşup boş sayfada bırakabiliyor.
+    window.location.assign("/dashboard");
   }
 
   return (

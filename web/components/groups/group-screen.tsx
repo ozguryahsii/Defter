@@ -32,6 +32,7 @@ import {
   ArchiveGroupButton,
   LeaveGroupButton,
 } from "@/components/groups/group-member-actions";
+import { RemoveMemberButton } from "@/components/groups/remove-member-button";
 import { CategoryDonut } from "@/components/charts/category-donut";
 
 export function GroupScreen({
@@ -439,10 +440,19 @@ export function GroupScreen({
                           </AvatarFallback>
                         </Avatar>
                         <span className="flex-1 truncate text-sm">{name}</span>
-                        {m.userId === group.createdById && (
+                        {m.userId === group.createdById ? (
                           <Badge variant="secondary" className="text-[10px]">
                             sahip
                           </Badge>
+                        ) : (
+                          isOwner &&
+                          !isArchived && (
+                            <RemoveMemberButton
+                              groupId={group.id}
+                              userId={m.userId}
+                              name={name}
+                            />
+                          )
                         )}
                       </li>
                     );

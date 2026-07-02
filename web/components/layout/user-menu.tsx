@@ -43,7 +43,12 @@ export function UserMenu({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={async () => {
+            // redirect:false + kendi yönlendirmemiz: NextAuth'un mutlak URL
+            // (NEXTAUTH_URL/localhost) yönlendirmesi mobil/canlıda kırılıyordu.
+            await signOut({ redirect: false });
+            window.location.assign("/login");
+          }}
           className="text-destructive focus:text-destructive [&_svg]:text-destructive"
         >
           <LogOut /> Çıkış yap
