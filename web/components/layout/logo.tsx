@@ -21,10 +21,12 @@ export function Logo({
 }) {
   const [imgFailed, setImgFailed] = useState(false);
 
+  // The brand PNG has generous padding around the wordmark, so the rendered
+  // boxes are intentionally large for the mark to read well.
   const dims =
     size === "lg"
-      ? { w: 280, h: 140, class: "h-28 w-auto" }
-      : { w: 120, h: 60, class: "h-9 w-auto" };
+      ? { w: 480, h: 240, class: "h-40 w-auto sm:h-48" }
+      : { w: 200, h: 100, class: "h-12 w-auto" };
 
   return (
     <Link
