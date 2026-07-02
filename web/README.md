@@ -68,6 +68,85 @@ parola:    demo12345
 | `npm run db:push` | Prisma şemasını SQLite'a uygula |
 | `npm run db:seed` | Örnek veriyi yükle |
 | `npm run db:reset` | Şemayı sıfırla + yeniden seed |
+| `npm run db:fresh` | Şemayı sıfırla, **boş** başla (seed yok) |
+| `npm run start:prod` | Production sunucusunu tek süreçte çalıştır (test) |
+| `npm run service:install` | Windows Service olarak kur (yönetici) |
+| `npm run service:uninstall` | Windows Service'i kaldır (yönetici) |
+
+## Production + Windows Service (kalıcı çalıştırma)
+
+Her seferinde `npm run` yazmadan, bilgisayar açılınca kendiliğinden başlayan,
+arka planda çalışan bir **Windows Service** olarak kurmak için:
+
+### 1. Gerçek bir `NEXTAUTH_SECRET` ayarla (production şart)
+
+`.env` içindeki `NEXTAUTH_SECRET="change-me"` değerini güçlü bir değerle değiştir:
+
+```powershell
+# PowerShell ile üret ve .env'e yaz
+$secret = [Convert]::ToBase64String((1..32 | % { Get-Random -Max 256 }))
+"NEXTAUTH_SECRET=$secret"
+```
+
+Ağdaki başka cihazlardan erişilecekse `.env` içinde `NEXTAUTH_URL`'yi de
+sunucunun adresine göre ayarla (örn. `http://192.168.1.20:3000`).
+
+### 2. Veritabanını hazırla
+
+```powershell
+npm run db:push      # şemayı kur
+# Sıfırdan, boş (demo verisi olmadan) başlamak istersen:
+npm run db:fresh
+```
+
+> Veri kalıcıdır: `web/prisma/dev.db` dosyasında tutulur. Yedeklemek için bu
+> dosyayı kopyalaman yeterli.
+
+### 3. Production build al
+
+```powershell
+npm run build
+```
+
+### 4. Servisi kur (yönetici PowerShell)
+
+```powershell
+npm run service:install
+```
+
+Bu, `Defter` adında bir Windows Service oluşturur; otomatik başlar, çökerse
+kendini yeniden başlatır. Tarayıcıdan **http://localhost:3000**.
+
+Yönetim:
+
+```powershell
+Start-Service Defter
+Stop-Service Defter
+Restart-Service Defter
+Get-Service Defter
+```
+
+Kaldırmak için:
+
+```powershell
+npm run service:uninstall
+```
+
+> **Kod/şema güncellediğinde:** `git pull` → `npm install` → `npm run build` →
+> `Restart-Service Defter`. Şema değiştiyse ayrıca `npm run db:push`.
+
+### Ayarlar (ortam değişkenleri)
+
+| Değişken | Açıklama | Varsayılan |
+|----------|----------|------------|
+| `PORT` | Dinlenen port | `3000` |
+| `HOST` | Bağlanılan arayüz (`0.0.0.0` = ağa açık) | `0.0.0.0` |
+| `DATABASE_URL` | SQLite dosya yolu | `file:./dev.db` |
+| `NEXTAUTH_SECRET` | Oturum imzalama anahtarı (production'da zorunlu) | — |
+| `NEXTAUTH_URL` | Uygulamanın dış adresi | `http://localhost:3000` |
+
+Portu değiştirmek için servisi kurmadan önce `.env`'e `PORT=8080` gibi bir satır
+ekleyip `npm run service:install` çalıştır (kaldırıp yeniden kurman gerekir).
 
 ## Mimari
 
