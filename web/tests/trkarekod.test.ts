@@ -17,8 +17,12 @@ test("buildFastKarekod produces a well-formed TLV payload", () => {
 
   assert.ok(qr.startsWith("000201"), "payload format indicator");
   assert.ok(qr.includes("0102" + "12"), "dynamic initiation when amount set");
-  assert.ok(qr.includes("0011TR.GOV.TCMB"), "FAST GUID in account template");
-  assert.ok(qr.includes("0126" + iban), "IBAN sub-tag");
+  // FAST P2P template is ID 30: GUID + IBAN + flow type 03.
+  const account = "0011TR.GOV.TCMB" + "0126" + iban + "020203";
+  assert.ok(
+    qr.includes("30" + String(account.length).padStart(2, "0") + account),
+    "template 30 with GUID + IBAN + flow type 03",
+  );
   assert.ok(qr.includes("5303949"), "TRY currency 949");
   assert.ok(qr.includes("54078458.00"), "amount 8458.00");
   assert.ok(qr.includes("5802TR"), "country TR");

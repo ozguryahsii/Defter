@@ -1,10 +1,13 @@
 // FAST "TR Karekod" (kişiden kişiye) payload builder.
 //
 // Turkish bank apps reject a QR that contains a bare IBAN string; they expect
-// the TCMB TR Karekod format: an EMVCo-MPM style TLV payload with the FAST
-// recipient template (GUID "TR.GOV.TCMB" + IBAN), currency 949 (TRY), country
-// "TR", recipient name and a CRC-16 (ISO/IEC 13239, poly 0x1021, init 0xFFFF)
-// over the whole payload including the "6304" prefix of the CRC field itself.
+// the TCMB TR Karekod format: an EMVCo-MPM style TLV payload. Per the FAST
+// TR Karekod guide, person-to-person recipient info lives in template ID 30
+// (BKM card payments use 26/27): GUID "TR.GOV.TCMB" (30/00), recipient IBAN
+// (30/01) and the mandatory flow-type sub-field 30/02 fixed to "03" (P2P).
+// Root fields: currency 949 (TRY), country "TR", recipient name, and a CRC-16
+// (ISO/IEC 13239, poly 0x1021, init 0xFFFF) over the whole payload including
+// the "6304" prefix of the CRC field itself.
 
 /** value must already be the final string; id is a 2-digit EMV tag. */
 function tlv(id: string, value: string): string {
@@ -55,24 +58,21 @@ export function buildFastKarekod(input: {
     Number.isFinite(input.amount) &&
     input.amount > 0;
 
-  // Recipient account template (26): FAST GUID + IBAN.
-  const account = tlv("00", "TR.GOV.TCMB") + tlv("01", iban);
+  // FAST P2P recipient template (30): GUID + IBAN + flow type "03".
+  const account =
+    tlv("00", "TR.GOV.TCMB") + tlv("01", iban) + tlv("02", "03");
 
   let payload =
     tlv("00", "01") + // payload format indicator
     tlv("01", hasAmount ? "12" : "11") + // dynamic when an amount is embedded
-    tlv("26", account) +
-    tlv("52", "0000") + // MCC: not a merchant payment
+    tlv("30", account) +
     tlv("53", "949"); // ISO 4217 numeric for TRY (FAST is TRY-only)
 
   if (hasAmount) {
     payload += tlv("54", input.amount!.toFixed(2));
   }
 
-  payload +=
-    tlv("58", "TR") +
-    tlv("59", sanitizeName(input.name)) +
-    tlv("60", "Turkiye");
+  payload += tlv("58", "TR") + tlv("59", sanitizeName(input.name));
 
   payload += "6304";
   payload += crc16ccitt(payload);
