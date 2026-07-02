@@ -206,9 +206,3 @@ body {
   --safe-top: env(safe-area-inset-top, 0px);
 }
 
-/* Küçük ekranlarda dialog içeriği kenarlara yapışmasın */
-@media (max-width: 640px) {
-  [role="dialog"] {
-    max-width: calc(100vw - 1.5rem);
-  }
-}
