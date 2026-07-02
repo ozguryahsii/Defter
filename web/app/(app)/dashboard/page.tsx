@@ -18,9 +18,7 @@ import { RecentExpenses } from "@/components/dashboard/recent-expenses";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/magic/reveal";
 import { Button } from "@/components/ui/button";
-import { SpendAreaChart } from "@/components/charts/spend-area-chart";
 import { CategoryDonut } from "@/components/charts/category-donut";
-import { MemberBarChart } from "@/components/charts/member-bar-chart";
 
 export const metadata: Metadata = { title: "Genel Bakış" };
 
@@ -38,7 +36,7 @@ export default async function DashboardPage() {
       >
         <Button asChild variant="brand">
           <Link href="/groups/new">
-            <Plus /> Yeni Ortak Harcama
+            <Plus /> Yeni Grup Ekle
           </Link>
         </Button>
       </PageHeader>
@@ -47,7 +45,7 @@ export default async function DashboardPage() {
         <EmptyState
           icon={Layers}
           title="Henüz bir grubun yok"
-          description="Bir tatil ya da ortak girişim için ilk ortak harcama grubunu oluştur, arkadaşlarını ekle ve harcamaları girmeye başla."
+          description="Bir tatil ya da arkadaş grubu için ilk grubunu oluştur, arkadaşlarını ekle ve harcamaları girmeye başla."
           actionLabel="İlk grubunu oluştur"
           actionHref="/groups/new"
         />
@@ -94,33 +92,7 @@ export default async function DashboardPage() {
             </Reveal>
           </div>
 
-          {/* Charts */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Reveal delay={0.1} className="lg:col-span-2">
-              <SectionCard
-                title="Harcama Trendi"
-                description="Son 6 ayın toplam grup harcaması"
-              >
-                <SpendAreaChart data={data.monthlySpend} currency={cur} />
-              </SectionCard>
-            </Reveal>
-            <Reveal delay={0.15}>
-              <SectionCard
-                title="Kategori Dağılımı"
-                description="Nereye harcandı?"
-              >
-                {data.categoryBreakdown.length ? (
-                  <CategoryDonut data={data.categoryBreakdown} currency={cur} />
-                ) : (
-                  <p className="py-10 text-center text-sm text-muted-foreground">
-                    Kategori verisi yok.
-                  </p>
-                )}
-              </SectionCard>
-            </Reveal>
-          </div>
-
-          {/* Groups + recent */}
+          {/* Groups + side column */}
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
               <div className="flex items-center justify-between">
@@ -138,27 +110,32 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <Reveal delay={0.1}>
-              <SectionCard
-                title="Son Hareketler"
-                description="En güncel harcamalar"
-              >
-                <RecentExpenses items={data.recentExpenses} />
-              </SectionCard>
-            </Reveal>
-          </div>
+            <div className="space-y-4">
+              <Reveal delay={0.1}>
+                <SectionCard
+                  title="Kategori Dağılımı"
+                  description="Nereye harcandı?"
+                >
+                  {data.categoryBreakdown.length ? (
+                    <CategoryDonut data={data.categoryBreakdown} currency={cur} />
+                  ) : (
+                    <p className="py-10 text-center text-sm text-muted-foreground">
+                      Kategori verisi yok.
+                    </p>
+                  )}
+                </SectionCard>
+              </Reveal>
 
-          {/* Member spend */}
-          {data.memberSpend.length > 0 && (
-            <Reveal delay={0.05}>
-              <SectionCard
-                title="Kim Ne Kadar Ödedi"
-                description="Üye bazında toplam ödenen tutar"
-              >
-                <MemberBarChart data={data.memberSpend} currency={cur} />
-              </SectionCard>
-            </Reveal>
-          )}
+              <Reveal delay={0.15}>
+                <SectionCard
+                  title="Son Hareketler"
+                  description="En güncel harcamalar"
+                >
+                  <RecentExpenses items={data.recentExpenses} />
+                </SectionCard>
+              </Reveal>
+            </div>
+          </div>
         </>
       )}
     </div>

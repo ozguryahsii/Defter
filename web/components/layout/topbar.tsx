@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { Bell, Menu, Plus, Search } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Logo } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
@@ -41,22 +40,7 @@ export function Topbar({
         <Logo />
       </div>
 
-      {/* Search */}
-      <div className="relative hidden max-w-sm flex-1 md:block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          placeholder="Ara…"
-          className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm outline-none transition focus:border-border focus:bg-background"
-        />
-      </div>
-
       <div className="ml-auto flex items-center gap-1.5">
-        <Button asChild variant="outline" size="sm" className="hidden sm:flex">
-          <Link href="/groups/new">
-            <Plus /> Yeni
-          </Link>
-        </Button>
         <Button
           variant="ghost"
           size="icon"

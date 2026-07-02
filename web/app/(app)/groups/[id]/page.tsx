@@ -18,9 +18,8 @@ import { InviteButton } from "@/components/groups/invite-button";
 import { ExpenseList } from "@/components/groups/expense-list";
 import { ActivityFeed } from "@/components/groups/activity-feed";
 import { LiveRefresh } from "@/components/groups/live-refresh";
-import { BudgetCard } from "@/components/groups/budget-card";
 import { RatioEditor } from "@/components/groups/ratio-editor";
-import { RecurringSection } from "@/components/groups/recurring-section";
+import { CategoryDonut } from "@/components/charts/category-donut";
 
 export const metadata: Metadata = { title: "Grup" };
 
@@ -34,8 +33,7 @@ export default async function GroupDetailPage({
   const detail = await getGroupDetail(params.id, userId);
   if (!detail) notFound();
 
-  const { group, settlement, total, settled, activities, recurring, monthSpend, budget } =
-    detail;
+  const { group, settlement, total, settled, activities } = detail;
   const isVenture = group.type === "Girisim";
   const isOwner = group.createdById === userId;
   const Icon = isVenture ? Rocket : Plane;
@@ -91,6 +89,20 @@ export default async function GroupDetailPage({
   const yourBalance =
     settlement.balances.find((b) => b.userId === userId)?.amount ?? 0;
 
+  const youPaid = group.expenses
+    .filter((e) => e.payerId === userId)
+    .reduce((s, e) => s + e.amount, 0);
+
+  const categoryMap = new Map<string, number>();
+  for (const e of group.expenses) {
+    const cat = e.category?.trim() || "Diğer";
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + e.amount);
+  }
+  const categoryBreakdown = [...categoryMap.entries()]
+    .map(([category, amount]) => ({ category, amount: Math.round(amount) }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 6);
+
   return (
     <div className="space-y-6">
       <LiveRefresh
@@ -143,11 +155,15 @@ export default async function GroupDetailPage({
       </div>
 
       {/* Summary strip */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryTile
           label="Toplam Harcama"
           value={formatCurrency(total, group.currency)}
           icon={<Wallet className="h-4 w-4" />}
+        />
+        <SummaryTile
+          label="Senin Ödediğin"
+          value={formatCurrency(youPaid, group.currency)}
         />
         <SummaryTile
           label="Senin Durumun"
@@ -208,14 +224,17 @@ export default async function GroupDetailPage({
         {/* Side column */}
         <div className="space-y-4">
           <Reveal delay={0.08}>
-            <SectionCard title="Bütçe" description="Aylık harcama takibi">
-              <BudgetCard
-                groupId={group.id}
-                currency={group.currency}
-                monthSpend={monthSpend}
-                budget={budget}
-                isOwner={isOwner}
-              />
+            <SectionCard title="Kategori Dağılımı" description="Nereye harcandı?">
+              {categoryBreakdown.length ? (
+                <CategoryDonut
+                  data={categoryBreakdown}
+                  currency={group.currency}
+                />
+              ) : (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Kategori verisi yok.
+                </p>
+              )}
             </SectionCard>
           </Reveal>
 
@@ -247,18 +266,6 @@ export default async function GroupDetailPage({
               </SectionCard>
             </Reveal>
           )}
-
-          <Reveal delay={0.13}>
-            <SectionCard title="Tekrarlayan" description="Düzenli giderler">
-              <RecurringSection
-                groupId={group.id}
-                currency={group.currency}
-                items={recurring}
-                members={members}
-                currentUserId={userId}
-              />
-            </SectionCard>
-          </Reveal>
 
           <Reveal delay={0.14}>
             <SectionCard title="Hareketler" description="Son aktiviteler">

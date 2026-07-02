@@ -14,7 +14,7 @@ export function Sidebar() {
       <div className="mt-6 px-2">
         <Button asChild variant="brand" className="w-full justify-start">
           <Link href="/groups/new">
-            <Plus /> Yeni Ortak Harcama
+            <Plus /> Yeni Grup Ekle
           </Link>
         </Button>
       </div>
