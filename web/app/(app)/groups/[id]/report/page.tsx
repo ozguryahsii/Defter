@@ -150,7 +150,8 @@ export default async function GroupReportPage({
 
       {/* Expenses */}
       <Section title="Harcamalar">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
               <th className="py-1.5">Tarih</th>
@@ -177,6 +178,7 @@ export default async function GroupReportPage({
             ))}
           </tbody>
         </table>
+        </div>
       </Section>
     </div>
   );

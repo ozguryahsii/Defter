@@ -170,3 +170,45 @@
 *::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* --- Platform polish ------------------------------------------------- */
+
+/* Recharts: tarayıcının SVG odak çerçevesini (hover'da çıkan siyah kutu)
+   ve dilim tıklama outline'ını kaldır. */
+.recharts-wrapper,
+.recharts-wrapper svg,
+.recharts-surface,
+.recharts-layer,
+.recharts-sector,
+.recharts-pie,
+.recharts-pie-sector {
+  outline: none !important;
+}
+
+/* Mobil: yatay kaymayı kökten engelle, dokunma vurgusunu kapat,
+   iOS'un metni kendi kafasına göre büyütmesini önle. */
+html,
+body {
+  overflow-x: clip;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* PWA / çentikli ekranlar: güvenli alan değişkenleri */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Küçük ekranlarda dialog içeriği kenarlara yapışmasın */
+@media (max-width: 640px) {
+  [role="dialog"] {
+    max-width: calc(100vw - 1.5rem);
+  }
+}

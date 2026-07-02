@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 export default async function AppLayout({
   children,
@@ -23,10 +24,12 @@ export default async function AppLayout({
             username={session.user.username}
           />
         </div>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8 lg:py-8 print:max-w-none print:p-0">
+        {/* pb-24: mobil alt gezinme çubuğunun içeriği örtmemesi için */}
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 lg:px-8 lg:py-8 lg:pb-8 print:max-w-none print:p-0">
           {children}
         </main>
       </div>
+      <BottomNav />
     </div>
   );
 }

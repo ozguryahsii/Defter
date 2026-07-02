@@ -60,8 +60,10 @@ export function KpiGrid({ items }: { items: KpiItem[] }) {
     <>
       <div
         className={cn(
-          "grid gap-4 sm:grid-cols-2",
-          items.length >= 5 ? "xl:grid-cols-5" : "xl:grid-cols-4",
+          "grid grid-cols-2 gap-3 sm:gap-4",
+          items.length >= 5
+            ? "lg:grid-cols-3 xl:grid-cols-5"
+            : "xl:grid-cols-4",
         )}
       >
         {items.map((item) => {
@@ -82,7 +84,7 @@ export function KpiGrid({ items }: { items: KpiItem[] }) {
               </div>
               <p
                 className={cn(
-                  "mt-1.5 truncate text-xl font-semibold tracking-tight",
+                  "mt-1.5 truncate text-lg font-semibold tracking-tight sm:text-xl",
                   TONE[item.tone ?? "default"],
                 )}
               >
