@@ -7,8 +7,10 @@ import { ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * SOBSO! brand mark. Renders /logo.png (drop the brand PNG into web/public);
- * falls back to a styled wordmark if the file is missing.
+ * SOBSO! brand mark. Renders /logo.png cropped to the central wordmark band:
+ * the source PNG is a square canvas with lots of padding, so we show it inside
+ * a wide box with object-cover — the padding is cropped away and the wordmark
+ * fills the box. Falls back to a styled wordmark if the file is missing.
  */
 export function Logo({
   href = "/dashboard",
@@ -16,55 +18,64 @@ export function Logo({
   className,
 }: {
   href?: string;
-  size?: "sm" | "lg";
+  /** sm: topbar · md: sidebar · lg: login/register */
+  size?: "sm" | "md" | "lg";
   className?: string;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
 
-  // The brand PNG has generous padding around the wordmark, so the rendered
-  // boxes are intentionally large for the mark to read well.
-  const dims =
-    size === "lg"
-      ? { w: 640, h: 320, class: "h-56 w-auto sm:h-72" }
-      : { w: 240, h: 120, class: "h-14 w-auto" };
+  const box = {
+    sm: "h-12 w-32", // 48 × 128 — mobile topbar
+    md: "h-20 w-48", // 80 × 192 — sidebar
+    lg: "h-44 w-full max-w-[26rem] sm:h-48", // login hero
+  }[size];
+
+  if (imgFailed) {
+    const big = size === "lg";
+    return (
+      <Link
+        href={href}
+        className={cn("group flex items-center gap-2.5", className)}
+        aria-label="SOBSO! ana sayfa"
+      >
+        <span
+          className={cn(
+            "relative grid place-items-center rounded-xl bg-gradient-to-br from-brand to-primary text-brand-foreground shadow-glow",
+            big ? "h-14 w-14" : "h-9 w-9",
+          )}
+        >
+          <ArrowLeftRight className={big ? "h-7 w-7" : "h-5 w-5"} />
+        </span>
+        <span
+          className={cn(
+            "font-semibold tracking-tight",
+            big ? "text-4xl" : "text-lg",
+          )}
+        >
+          SOBSO!
+        </span>
+      </Link>
+    );
+  }
 
   return (
     <Link
       href={href}
-      className={cn("group flex items-center gap-2.5", className)}
+      className={cn("block", size === "lg" && "w-full", className)}
       aria-label="SOBSO! ana sayfa"
     >
-      {imgFailed ? (
-        <span className="flex items-center gap-2.5">
-          <span
-            className={cn(
-              "relative grid place-items-center rounded-xl bg-gradient-to-br from-brand to-primary text-brand-foreground shadow-glow",
-              size === "lg" ? "h-14 w-14" : "h-9 w-9",
-            )}
-          >
-            <ArrowLeftRight className={size === "lg" ? "h-7 w-7" : "h-5 w-5"} />
-          </span>
-          <span
-            className={cn(
-              "font-semibold tracking-tight",
-              size === "lg" ? "text-4xl" : "text-lg",
-            )}
-          >
-            SOBSO!
-          </span>
-        </span>
-      ) : (
+      <span className={cn("relative block overflow-hidden", box)}>
         <Image
           src="/logo.png"
           alt="SOBSO!"
-          width={dims.w}
-          height={dims.h}
-          className={cn(dims.class, "object-contain")}
+          fill
+          sizes="(max-width: 640px) 90vw, 480px"
+          className="object-cover"
           priority={size === "lg"}
           unoptimized
           onError={() => setImgFailed(true)}
         />
-      )}
+      </span>
     </Link>
   );
 }

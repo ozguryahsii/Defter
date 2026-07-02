@@ -8,10 +8,10 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border/60 bg-card/40 px-4 py-6 backdrop-blur-xl lg:flex">
       <div className="px-2">
-        <Logo />
+        <Logo size="md" />
       </div>
 
-      <div className="mt-8 px-2">
+      <div className="mt-6 px-2">
         <Button asChild variant="brand" className="w-full justify-start">
           <Link href="/groups/new">
             <Plus /> Yeni Ortak Harcama
