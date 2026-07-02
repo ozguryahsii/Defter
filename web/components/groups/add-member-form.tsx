@@ -23,7 +23,7 @@ export function AddMemberForm({ groupId }: { groupId: string }) {
       toast.error(res.error ?? "Üye eklenemedi.");
       return;
     }
-    toast.success("Üye eklendi.");
+    toast.success("Davet gönderildi — onaylayınca gruba katılacak.");
     setValue("");
     router.refresh();
   }

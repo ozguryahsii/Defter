@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Archive, ArchiveRestore, DoorOpen, Loader2 } from "lucide-react";
 import { leaveGroup, setGroupArchived } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
 
-/** Owner: archive/unarchive toggle. */
+/** Owner: archive/unarchive toggle (prominent, full-width). */
 export function ArchiveGroupButton({
   groupId,
   archived,
@@ -37,20 +38,21 @@ export function ArchiveGroupButton({
   }
 
   return (
-    <button
+    <Button
+      variant="outline"
+      className="w-full justify-center"
       onClick={toggle}
       disabled={loading}
-      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
     >
       {loading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : archived ? (
-        <ArchiveRestore className="h-3.5 w-3.5" />
+        <ArchiveRestore className="h-4 w-4" />
       ) : (
-        <Archive className="h-3.5 w-3.5" />
+        <Archive className="h-4 w-4" />
       )}
-      {archived ? "Arşivden çıkar" : "Arşivle"}
-    </button>
+      {archived ? "Arşivden Çıkar" : "Grubu Arşivle"}
+    </Button>
   );
 }
 
@@ -74,17 +76,18 @@ export function LeaveGroupButton({ groupId }: { groupId: string }) {
   }
 
   return (
-    <button
+    <Button
+      variant="outline"
+      className="w-full justify-center border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
       onClick={leave}
       disabled={loading}
-      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
     >
       {loading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <DoorOpen className="h-3.5 w-3.5" />
+        <DoorOpen className="h-4 w-4" />
       )}
-      Gruptan ayrıl
-    </button>
+      Gruptan Ayrıl
+    </Button>
   );
 }

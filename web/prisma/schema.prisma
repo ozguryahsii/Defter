@@ -25,12 +25,45 @@ model User {
   ibanName String?
 
   memberships     GroupMember[]
-  paidExpenses    Expense[]      @relation("Payer")
+  paidExpenses    Expense[]          @relation("Payer")
   shares          ExpenseShare[]
-  settlementsFrom Settlement[]   @relation("SettlementFrom")
-  settlementsTo   Settlement[]   @relation("SettlementTo")
-  activities      Activity[]     @relation("ActivityActor")
+  settlementsFrom Settlement[]       @relation("SettlementFrom")
+  settlementsTo   Settlement[]       @relation("SettlementTo")
+  activities      Activity[]         @relation("ActivityActor")
   notifications   Notification[]
+  joinReqsSent    GroupJoinRequest[] @relation("JoinReqFrom")
+  joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
+}
+
+// Consent-based membership: adding someone creates a request they must accept.
+model GroupJoinRequest {
+  id          String    @id @default(cuid())
+  groupId     String
+  fromUserId  String // who wants to add
+  toUserId    String // who must consent
+  status      String    @default("pending") // "pending" | "accepted" | "rejected"
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  from  User  @relation("JoinReqFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  to    User  @relation("JoinReqTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([toUserId, status])
+  @@index([fromUserId, toUserId, status])
+}
+
+// Anti-harassment penalty: blocker (the rejecter) shields themselves from
+// the blocked user's group-add requests — 24h first, permanent on repeat.
+model UserAddBlock {
+  id        String    @id @default(cuid())
+  blockerId String // who rejected
+  blockedId String // who is penalised
+  permanent Boolean   @default(false)
+  until     DateTime? // 24h expiry when not permanent
+  createdAt DateTime  @default(now())
+
+  @@unique([blockerId, blockedId])
 }
 
 // In-app notification (push delivery will reuse these rows later).
@@ -63,11 +96,12 @@ model Group {
   // Optional monthly spending budget for the group.
   monthlyBudget Float?
 
-  members     GroupMember[]
-  expenses    Expense[]
-  settlements Settlement[]
-  invites     Invite[]
-  activities  Activity[]
+  members      GroupMember[]
+  expenses     Expense[]
+  settlements  Settlement[]
+  invites      Invite[]
+  joinRequests GroupJoinRequest[]
+  activities   Activity[]
   recurring   RecurringExpense[]
 }
 

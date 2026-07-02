@@ -42,8 +42,16 @@ export function GroupScreen({
   detail: GroupDetail;
   userId: string;
 }) {
-  const { group, settlement, settled, activities, recurring, monthSpend, budget } =
-    detail;
+  const {
+    group,
+    settlement,
+    settled,
+    activities,
+    recurring,
+    monthSpend,
+    budget,
+    pendingInvites,
+  } = detail;
   const isPersonal = group.type === "Kisisel";
   const isOwner = group.createdById === userId;
   const isArchived = group.archivedAt != null;
@@ -458,11 +466,32 @@ export function GroupScreen({
                     );
                   })}
                 </ul>
+                {pendingInvites.length > 0 && (
+                  <>
+                    <Separator className="my-4" />
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      Bekleyen davetler ({pendingInvites.length})
+                    </p>
+                    <ul className="space-y-1.5">
+                      {pendingInvites.map((p) => (
+                        <li
+                          key={p.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-border/60 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="truncate">{p.toName}</span>
+                          <span className="shrink-0 text-muted-foreground">
+                            onay bekliyor
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
                 {!isArchived && (
                   <>
                     <Separator className="my-4" />
                     <p className="mb-2 text-xs font-medium text-muted-foreground">
-                      Kullanıcı adına göre üye ekle
+                      Kullanıcı adına göre üye ekle (onayına gider)
                     </p>
                     <AddMemberForm groupId={group.id} />
                     <div className="mt-3">
@@ -471,6 +500,23 @@ export function GroupScreen({
                   </>
                 )}
               </SectionCard>
+
+              {/* Grup yönetimi — üyeler kartının hemen altında, görünür */}
+              <div className="mt-4 space-y-2">
+                {!isOwner && <LeaveGroupButton groupId={group.id} />}
+                {isOwner && (
+                  <>
+                    <ArchiveGroupButton
+                      groupId={group.id}
+                      archived={isArchived}
+                    />
+                    <DeleteGroupButton
+                      groupId={group.id}
+                      groupName={group.name}
+                    />
+                  </>
+                )}
+              </div>
             </Reveal>
           )}
         </div>
@@ -481,15 +527,7 @@ export function GroupScreen({
           {isPersonal ? "Bütçe" : "Grup"} {formatDate(group.createdAt)}{" "}
           tarihinde oluşturuldu.
         </p>
-        <div className="flex items-center gap-4">
-          {!isPersonal && !isOwner && <LeaveGroupButton groupId={group.id} />}
-          {isOwner && !isPersonal && (
-            <>
-              <ArchiveGroupButton groupId={group.id} archived={isArchived} />
-              <DeleteGroupButton groupId={group.id} groupName={group.name} />
-            </>
-          )}
-        </div>
+        <span />
       </div>
     </div>
   );

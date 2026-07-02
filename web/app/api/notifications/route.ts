@@ -70,6 +70,7 @@ export async function GET() {
         title: true,
         body: true,
         groupId: true,
+        meta: true,
         readAt: true,
         createdAt: true,
       },

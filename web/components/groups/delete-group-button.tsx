@@ -43,9 +43,12 @@ export function DeleteGroupButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-destructive">
-          <Trash2 className="h-3.5 w-3.5" /> Grubu sil
-        </button>
+        <Button
+          variant="outline"
+          className="w-full justify-center border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" /> Grubu Sil
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>

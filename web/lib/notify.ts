@@ -4,6 +4,7 @@ export type NotificationType =
   | "expense.add"
   | "settle"
   | "member.add"
+  | "member.request"
   | "payment.reminder"
   | "payment.due";
 

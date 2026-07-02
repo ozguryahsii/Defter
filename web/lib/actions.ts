@@ -158,30 +158,208 @@ export async function addMember(
 
   const user = await prisma.user.findUnique({ where: { username: name } });
   if (!user) return { ok: false, error: `'${name}' bulunamadı.` };
+  if (user.id === session.user.id)
+    return { ok: false, error: "Kendini davet edemezsin." };
 
   const already = await prisma.groupMember.findFirst({
     where: { groupId, userId: user.id },
   });
   if (already) return { ok: false, error: `'${name}' zaten grupta.` };
 
-  await prisma.groupMember.create({ data: { groupId, userId: user.id } });
-  await logActivity({
-    groupId,
-    actorId: session.user.id,
-    type: "member.add",
-    summary: `${user.displayName ?? user.username} gruba eklendi`,
+  // --- Sosyal huzur kuralları -------------------------------------------
+  const block = await prisma.userAddBlock.findUnique({
+    where: {
+      blockerId_blockedId: { blockerId: user.id, blockedId: session.user.id },
+    },
   });
+  if (block?.permanent)
+    return {
+      ok: false,
+      error: `'${name}' taleplerini kalıcı olarak reddetti; bu kullanıcıyı gruba ekleyemezsin.`,
+    };
+  if (block?.until && block.until > new Date()) {
+    const hours = Math.ceil((block.until.getTime() - Date.now()) / 3_600_000);
+    return {
+      ok: false,
+      error: `Taleplerini çok reddettiği için '${name}' kullanıcısını ~${hours} saat boyunca gruba ekleyemezsin.`,
+    };
+  }
+
+  const pendingSame = await prisma.groupJoinRequest.findFirst({
+    where: { groupId, toUserId: user.id, status: "pending" },
+  });
+  if (pendingSame)
+    return { ok: false, error: `'${name}' için bu grupta zaten bekleyen bir davet var.` };
+
+  const pendingCount = await prisma.groupJoinRequest.count({
+    where: {
+      fromUserId: session.user.id,
+      toUserId: user.id,
+      status: "pending",
+    },
+  });
+  if (pendingCount >= 10)
+    return {
+      ok: false,
+      error: `'${name}' için 10 bekleyen talebin var; yanıtlanmadan yenisini gönderemezsin.`,
+    };
+  // ----------------------------------------------------------------------
 
   const groupInfo = await prisma.group.findUnique({ where: { id: groupId } });
+  const request = await prisma.groupJoinRequest.create({
+    data: { groupId, fromUserId: session.user.id, toUserId: user.id },
+  });
+
   await notify({
     userId: user.id,
-    type: "member.add",
-    title: `"${groupInfo?.name ?? "Bir grup"}" grubuna eklendin`,
-    body: `${session.user.name ?? "Bir kullanıcı"} seni gruba ekledi.`,
+    type: "member.request",
+    title: `"${groupInfo?.name ?? "Bir grup"}" grubuna davet edildin`,
+    body: `${session.user.name ?? "Bir kullanıcı"} seni eklemek istiyor. Onaylarsan gruba katılırsın.`,
     groupId,
+    meta: { requestId: request.id },
   });
 
   revalidatePath(`/groups/${groupId}`);
+  return { ok: true };
+}
+
+/**
+ * The invited user accepts or rejects a pending join request. Rejections feed
+ * the anti-harassment counters: 5 rejections => requester gets a 24h add-ban
+ * (with a warning); 5 more after the ban => permanent ban.
+ */
+export async function respondJoinRequest(
+  requestId: string,
+  accept: boolean,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const request = await prisma.groupJoinRequest.findUnique({
+    where: { id: requestId },
+    include: { group: true, from: true },
+  });
+  if (!request || request.toUserId !== session.user.id)
+    return { ok: false, error: "Talep bulunamadı." };
+  if (request.status !== "pending") {
+    // Stale notification: clean it up quietly.
+    await prisma.notification.deleteMany({
+      where: {
+        userId: session.user.id,
+        type: "member.request",
+        meta: JSON.stringify({ requestId }),
+      },
+    });
+    return { ok: false, error: "Bu talep zaten yanıtlanmış." };
+  }
+
+  await prisma.groupJoinRequest.update({
+    where: { id: requestId },
+    data: {
+      status: accept ? "accepted" : "rejected",
+      respondedAt: new Date(),
+    },
+  });
+  // The actionable notification is consumed either way.
+  await prisma.notification.deleteMany({
+    where: {
+      userId: session.user.id,
+      type: "member.request",
+      meta: JSON.stringify({ requestId }),
+    },
+  });
+
+  const myName = session.user.name ?? "Kullanıcı";
+
+  if (accept) {
+    if (request.group.archivedAt)
+      return { ok: false, error: "Grup arşivlendiği için katılamazsın." };
+    const already = await prisma.groupMember.findFirst({
+      where: { groupId: request.groupId, userId: session.user.id },
+    });
+    if (!already) {
+      await prisma.groupMember.create({
+        data: { groupId: request.groupId, userId: session.user.id },
+      });
+    }
+    await logActivity({
+      groupId: request.groupId,
+      actorId: session.user.id,
+      type: "member.add",
+      summary: `${myName} daveti kabul edip gruba katıldı`,
+    });
+    await notify({
+      userId: request.fromUserId,
+      type: "member.add",
+      title: `${myName} davetini kabul etti`,
+      body: `"${request.group.name}" grubuna katıldı.`,
+      groupId: request.groupId,
+    });
+    revalidatePath(`/groups/${request.groupId}`);
+    revalidatePath("/groups");
+    return { ok: true, groupId: request.groupId };
+  }
+
+  // --- Rejection penalties ----------------------------------------------
+  const pair = {
+    blockerId: session.user.id, // rejecter
+    blockedId: request.fromUserId, // requester
+  };
+  const existingBlock = await prisma.userAddBlock.findUnique({
+    where: { blockerId_blockedId: pair },
+  });
+  if (!existingBlock?.permanent) {
+    const lastAccept = await prisma.groupJoinRequest.findFirst({
+      where: {
+        fromUserId: request.fromUserId,
+        toUserId: session.user.id,
+        status: "accepted",
+      },
+      orderBy: { respondedAt: "desc" },
+    });
+    // Streak restarts after the previous penalty or the last acceptance.
+    const anchor = new Date(
+      Math.max(
+        existingBlock?.createdAt.getTime() ?? 0,
+        lastAccept?.respondedAt?.getTime() ?? 0,
+      ),
+    );
+    const rejectionStreak = await prisma.groupJoinRequest.count({
+      where: {
+        fromUserId: request.fromUserId,
+        toUserId: session.user.id,
+        status: "rejected",
+        respondedAt: { gt: anchor },
+      },
+    });
+
+    if (rejectionStreak >= 5) {
+      if (existingBlock) {
+        // Second strike after a served 24h ban: permanent.
+        await prisma.userAddBlock.update({
+          where: { blockerId_blockedId: pair },
+          data: { permanent: true, until: null, createdAt: new Date() },
+        });
+        await notify({
+          userId: request.fromUserId,
+          type: "member.add",
+          title: "Grup ekleme engeli (kalıcı)",
+          body: `${myName}, taleplerini tekrar tekrar reddetti. Bu kullanıcıyı artık hiçbir gruba ekleyemezsin.`,
+        });
+      } else {
+        await prisma.userAddBlock.create({
+          data: { ...pair, until: new Date(Date.now() + 24 * 3_600_000) },
+        });
+        await notify({
+          userId: request.fromUserId,
+          type: "member.add",
+          title: "Grup ekleme engeli (24 saat)",
+          body: `${myName}, taleplerini 5 kez reddetti. 24 saat boyunca bu kullanıcıyı hiçbir gruba ekleyemezsin.`,
+        });
+      }
+    }
+  }
+
   return { ok: true };
 }
 

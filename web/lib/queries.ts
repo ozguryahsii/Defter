@@ -315,6 +315,8 @@ export type RecurringItem = {
   payerName: string;
 };
 
+export type PendingInvite = { id: string; toName: string; fromName: string };
+
 export type GroupDetail = {
   group: GroupWithData;
   settlement: SettlementResult;
@@ -324,6 +326,7 @@ export type GroupDetail = {
   recurring: RecurringItem[];
   monthSpend: number;
   budget: number | null;
+  pendingInvites: PendingInvite[];
 };
 
 export async function getGroupDetail(
@@ -403,6 +406,17 @@ export async function getGroupDetail(
     .filter((e) => e.kind !== "income" && new Date(e.date) >= monthStart)
     .reduce((s, e) => s + e.amount, 0);
 
+  const pendingReqs = await prisma.groupJoinRequest.findMany({
+    where: { groupId, status: "pending" },
+    include: { to: true, from: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const pendingInvites: PendingInvite[] = pendingReqs.map((r) => ({
+    id: r.id,
+    toName: r.to.displayName ?? r.to.username,
+    fromName: r.from.displayName ?? r.from.username,
+  }));
+
   return {
     group,
     settlement: settlementFor(group),
@@ -412,6 +426,7 @@ export async function getGroupDetail(
     recurring,
     monthSpend,
     budget: group.monthlyBudget ?? null,
+    pendingInvites,
   };
 }
 

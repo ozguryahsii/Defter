@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BellRing, Check, Plus, UserPlus, AlarmClock } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  Check,
+  Plus,
+  UserPlus,
+  AlarmClock,
+  Loader2,
+  X,
+} from "lucide-react";
+import { respondJoinRequest } from "@/lib/actions";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,12 +27,15 @@ type Item = {
   title: string;
   body: string | null;
   groupId: string | null;
+  meta: string | null;
   readAt: string | null;
   createdAt: string;
 };
 
 function iconFor(type: string) {
   switch (type) {
+    case "member.request":
+      return UserPlus;
     case "expense.add":
       return Plus;
     case "settle":
@@ -50,6 +64,7 @@ export function NotificationBell() {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -70,6 +85,27 @@ export function NotificationBell() {
     }, 45000);
     return () => clearInterval(id);
   }, [load]);
+
+  async function onRespond(n: Item, accept: boolean) {
+    let requestId: string | null = null;
+    try {
+      requestId = n.meta ? (JSON.parse(n.meta) as { requestId?: string }).requestId ?? null : null;
+    } catch {
+      requestId = null;
+    }
+    if (!requestId) return;
+    setRespondingId(n.id);
+    const res = await respondJoinRequest(requestId, accept);
+    setRespondingId(null);
+    if (!res.ok) {
+      toast.error(res.error ?? "İşlem başarısız.");
+    } else {
+      toast.success(accept ? "Gruba katıldın. 🎉" : "Davet reddedildi.");
+      if (accept && res.groupId) router.push(`/groups/${res.groupId}`);
+      router.refresh();
+    }
+    load();
+  }
 
   async function onOpenChange(open: boolean) {
     if (open) {
@@ -122,12 +158,7 @@ export function NotificationBell() {
                 const Icon = iconFor(n.type);
                 return (
                   <li key={n.id}>
-                    <button
-                      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary/40"
-                      onClick={() => {
-                        if (n.groupId) router.push(`/groups/${n.groupId}`);
-                      }}
-                    >
+                    <div className="flex w-full items-start gap-3 px-4 py-3 text-left">
                       <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground">
                         <Icon className="h-3.5 w-3.5" />
                       </span>
@@ -142,15 +173,48 @@ export function NotificationBell() {
                           {n.title}
                         </span>
                         {n.body && (
-                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
                             {n.body}
+                          </span>
+                        )}
+                        {n.type === "member.request" && (
+                          <span className="mt-2 flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="brand"
+                              className="h-7 px-3 text-xs"
+                              disabled={respondingId === n.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRespond(n, true);
+                              }}
+                            >
+                              {respondingId === n.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                              Onayla
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-3 text-xs"
+                              disabled={respondingId === n.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRespond(n, false);
+                              }}
+                            >
+                              <X className="h-3 w-3" /> Reddet
+                            </Button>
                           </span>
                         )}
                       </span>
                       <span className="shrink-0 text-[10px] text-muted-foreground">
                         {relative(n.createdAt)}
                       </span>
-                    </button>
+                    </div>
                   </li>
                 );
               })}
