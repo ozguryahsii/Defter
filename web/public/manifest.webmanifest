@@ -1,7 +1,7 @@
 {
-  "name": "Defter — Ortak Harcama",
-  "short_name": "Defter",
-  "description": "Arkadaş grupları ve ortak girişimler için harcama paylaşımı ve borç hesaplama.",
+  "name": "SOBSO! — Ortak Harcama",
+  "short_name": "SOBSO!",
+  "description": "Arkadaş grupları ve ortak girişimler için harcama paylaşımı ve borç hesaplama. I hope so!",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

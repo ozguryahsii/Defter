@@ -36,6 +36,11 @@ export function Topbar({
         </SheetContent>
       </Sheet>
 
+      {/* Brand (mobile — desktop shows it in the sidebar) */}
+      <div className="lg:hidden">
+        <Logo />
+      </div>
+
       {/* Search */}
       <div className="relative hidden max-w-sm flex-1 md:block">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

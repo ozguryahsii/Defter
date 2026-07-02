@@ -8,7 +8,9 @@ export default function LoginPage() {
   return (
     <Card className="glass gradient-border p-6 sm:p-8">
       <div className="mb-6 space-y-1 text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Tekrar hoş geldin</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          SOBSO!&apos;ya hoş geldin
+        </h1>
         <p className="text-sm text-muted-foreground">
           Hesabına giriş yaparak devam et
         </p>

@@ -16,7 +16,7 @@ export default async function AuthLayout({
       <AuroraBackground />
       <div className="w-full max-w-md">
         <div className="mb-8 flex justify-center">
-          <Logo href="/login" />
+          <Logo href="/login" size="lg" />
         </div>
         {children}
       </div>

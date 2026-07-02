@@ -12,14 +12,14 @@ const sans = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Defter — Ortak Harcama Paylaşımı",
-    template: "%s · Defter",
+    default: "SOBSO! — Ortak Harcama Paylaşımı",
+    template: "%s · SOBSO!",
   },
   description:
-    "Arkadaş grupları ve ortak girişimler için premium harcama paylaşım ve borç hesaplama uygulaması.",
+    "Arkadaş grupları ve ortak girişimler için premium harcama paylaşım ve borç hesaplama uygulaması. I hope so!",
   manifest: "/manifest.webmanifest",
-  applicationName: "Defter",
-  appleWebApp: { capable: true, title: "Defter", statusBarStyle: "black-translucent" },
+  applicationName: "SOBSO!",
+  appleWebApp: { capable: true, title: "SOBSO!", statusBarStyle: "black-translucent" },
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 
