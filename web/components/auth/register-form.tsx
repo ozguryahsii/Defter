@@ -65,6 +65,20 @@ export function RegisterForm() {
         )}
       </div>
       <div className="space-y-2">
+        <Label htmlFor="email">E-posta</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="ornek@eposta.com"
+          required
+        />
+        {fieldErrors.email && (
+          <p className="text-xs text-destructive">{fieldErrors.email}</p>
+        )}
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="displayName">Görünen ad (opsiyonel)</Label>
         <Input
           id="displayName"

@@ -30,6 +30,11 @@ const registerSchema = z.object({
     .min(3, "En az 3 karakter")
     .max(50)
     .regex(/^[a-zA-Z0-9._-]+$/, "Sadece harf, rakam ve . _ -"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Geçerli bir e-posta adresi girin."),
   displayName: z.string().trim().max(100).optional(),
   password: z.string().min(8, "En az 8 karakter"),
 });
@@ -40,6 +45,7 @@ export async function registerUser(
 ): Promise<ActionState> {
   const parsed = registerSchema.safeParse({
     username: formData.get("username"),
+    email: formData.get("email"),
     displayName: formData.get("displayName") || undefined,
     password: formData.get("password"),
   });
@@ -54,10 +60,20 @@ export async function registerUser(
   });
   if (exists) return { ok: false, error: "Bu kullanıcı adı zaten alınmış." };
 
+  const emailTaken = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+  });
+  if (emailTaken)
+    return {
+      ok: false,
+      fieldErrors: { email: "Bu e-posta adresi zaten kayıtlı." },
+    };
+
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   await prisma.user.create({
     data: {
       username: parsed.data.username,
+      email: parsed.data.email,
       displayName: parsed.data.displayName || null,
       passwordHash,
     },
@@ -519,6 +535,15 @@ export async function unsettleTransfer(
 // ---------------------------------------------------------------------------
 const profileSchema = z.object({
   displayName: z.string().trim().max(100).optional(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine(
+      (s) => s === "" || z.string().email().safeParse(s).success,
+      "Geçerli bir e-posta adresi girin.",
+    )
+    .optional(),
   iban: z
     .string()
     .trim()
@@ -537,6 +562,7 @@ export async function updateProfile(
 
   const parsed = profileSchema.safeParse({
     displayName: formData.get("displayName") || undefined,
+    email: (formData.get("email") as string | null) ?? undefined,
     iban: formData.get("iban") || undefined,
     ibanName: formData.get("ibanName") || undefined,
   });
@@ -546,10 +572,23 @@ export async function updateProfile(
     return { ok: false, fieldErrors: fe };
   }
 
+  const email = parsed.data.email || null;
+  if (email) {
+    const taken = await prisma.user.findFirst({
+      where: { email, id: { not: session.user.id } },
+    });
+    if (taken)
+      return {
+        ok: false,
+        fieldErrors: { email: "Bu e-posta başka bir hesapta kayıtlı." },
+      };
+  }
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
       displayName: parsed.data.displayName || null,
+      email,
       iban: parsed.data.iban || null,
       ibanName: parsed.data.ibanName || null,
     },

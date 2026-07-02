@@ -15,6 +15,11 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
 
+  // Required for new sign-ups (existing accounts add it from the profile).
+  // emailVerified will be set once the e-mail OTP flow ships.
+  email         String?   @unique
+  emailVerified DateTime?
+
   // Payment details for settlements (IBAN / QR).
   iban     String?
   ibanName String?

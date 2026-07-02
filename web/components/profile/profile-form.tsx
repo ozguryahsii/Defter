@@ -12,7 +12,12 @@ import { Label } from "@/components/ui/label";
 export function ProfileForm({
   initial,
 }: {
-  initial: { displayName: string; iban: string; ibanName: string };
+  initial: {
+    displayName: string;
+    email: string;
+    iban: string;
+    ibanName: string;
+  };
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -43,6 +48,20 @@ export function ProfileForm({
           defaultValue={initial.displayName}
           placeholder="Adın Soyadın"
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="email">E-posta</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          defaultValue={initial.email}
+          placeholder="ornek@eposta.com"
+          autoComplete="email"
+        />
+        {fieldErrors.email && (
+          <p className="text-xs text-destructive">{fieldErrors.email}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="iban">IBAN</Label>

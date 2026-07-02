@@ -34,6 +34,7 @@ export default async function ProfilePage() {
         <ProfileForm
           initial={{
             displayName: user.displayName ?? "",
+            email: user.email ?? "",
             iban: user.iban ?? "",
             ibanName: user.ibanName ?? "",
           }}
