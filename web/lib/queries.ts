@@ -70,6 +70,7 @@ export type GroupSummary = {
   yourBalance: number;
   members: { id: string; name: string }[];
   lastActivity: Date | null;
+  archived: boolean;
 };
 
 export function summarize(group: GroupWithData, userId: string): GroupSummary {
@@ -80,6 +81,7 @@ export function summarize(group: GroupWithData, userId: string): GroupSummary {
     id: group.id,
     name: group.name,
     type: group.type,
+    archived: group.archivedAt != null,
     currency: group.currency,
     memberCount: group.members.length,
     expenseCount: group.expenses.length,
@@ -140,7 +142,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   // Personal budget groups live on their own screen; the dashboard is for
   // shared groups only.
   const groups = (await loadUserGroups(userId)).filter(
-    (g) => g.type !== "Kisisel",
+    (g) => g.type !== "Kisisel" && g.archivedAt == null,
   );
   const summaries = groups.map((g) => summarize(g, userId));
 

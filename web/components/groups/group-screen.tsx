@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Archive,
   ArrowDownCircle,
   ArrowLeft,
   ArrowUpCircle,
@@ -27,6 +28,10 @@ import { LiveRefresh } from "@/components/groups/live-refresh";
 import { BudgetCard } from "@/components/groups/budget-card";
 import { RecurringSection } from "@/components/groups/recurring-section";
 import { DeleteGroupButton } from "@/components/groups/delete-group-button";
+import {
+  ArchiveGroupButton,
+  LeaveGroupButton,
+} from "@/components/groups/group-member-actions";
 import { CategoryDonut } from "@/components/charts/category-donut";
 
 export function GroupScreen({
@@ -40,6 +45,7 @@ export function GroupScreen({
     detail;
   const isPersonal = group.type === "Kisisel";
   const isOwner = group.createdById === userId;
+  const isArchived = group.archivedAt != null;
   const Icon = isPersonal ? Wallet : Plane;
 
   const members = group.members.map((m) => ({
@@ -48,7 +54,8 @@ export function GroupScreen({
   }));
 
   const expenseItems = group.expenses.map((e) => {
-    const canManage = e.payerId === userId || group.createdById === userId;
+    const canManage =
+      !isArchived && (e.payerId === userId || group.createdById === userId);
     const editSplit: "Equal" | "Exact" =
       e.splitType === "Exact" ? "Exact" : "Equal";
     return {
@@ -175,6 +182,14 @@ export function GroupScreen({
         </Link>
       )}
 
+      {isArchived && (
+        <div className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
+          <Archive className="h-4 w-4 shrink-0 text-warning" />
+          Bu grup arşivlendi — kayıtlar salt okunur; yeni harcama ve ödeme
+          yapılamaz.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
@@ -205,7 +220,7 @@ export function GroupScreen({
           >
             <FileText className="h-4 w-4" /> Rapor
           </Link>
-          {isPersonal && (
+          {isPersonal && !isArchived && (
             <AddExpenseDialog
               groupId={group.id}
               currency={group.currency}
@@ -215,13 +230,15 @@ export function GroupScreen({
               mode="income"
             />
           )}
-          <AddExpenseDialog
-            groupId={group.id}
-            currency={group.currency}
-            members={members}
-            currentUserId={userId}
-            personal={isPersonal}
-          />
+          {!isArchived && (
+            <AddExpenseDialog
+              groupId={group.id}
+              currency={group.currency}
+              members={members}
+              currentUserId={userId}
+              personal={isPersonal}
+            />
+          )}
         </div>
       </div>
 
@@ -305,7 +322,7 @@ export function GroupScreen({
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Main column */}
-        <div className="space-y-4 lg:col-span-2">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           {!isPersonal && (
             <Reveal>
               <SectionCard
@@ -319,6 +336,7 @@ export function GroupScreen({
                   currency={group.currency}
                   currentUserId={userId}
                   payInfo={payInfo}
+                  readOnly={isArchived}
                 />
               </SectionCard>
             </Reveal>
@@ -342,7 +360,7 @@ export function GroupScreen({
         </div>
 
         {/* Side column */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {isPersonal && (
             <Reveal delay={0.06}>
               <SectionCard title="Bütçe" description="Aylık harcama hedefin">
@@ -430,14 +448,18 @@ export function GroupScreen({
                     );
                   })}
                 </ul>
-                <Separator className="my-4" />
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                  Kullanıcı adına göre üye ekle
-                </p>
-                <AddMemberForm groupId={group.id} />
-                <div className="mt-3">
-                  <InviteButton groupId={group.id} />
-                </div>
+                {!isArchived && (
+                  <>
+                    <Separator className="my-4" />
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      Kullanıcı adına göre üye ekle
+                    </p>
+                    <AddMemberForm groupId={group.id} />
+                    <div className="mt-3">
+                      <InviteButton groupId={group.id} />
+                    </div>
+                  </>
+                )}
               </SectionCard>
             </Reveal>
           )}
@@ -449,9 +471,15 @@ export function GroupScreen({
           {isPersonal ? "Bütçe" : "Grup"} {formatDate(group.createdAt)}{" "}
           tarihinde oluşturuldu.
         </p>
-        {isOwner && !isPersonal && (
-          <DeleteGroupButton groupId={group.id} groupName={group.name} />
-        )}
+        <div className="flex items-center gap-4">
+          {!isPersonal && !isOwner && <LeaveGroupButton groupId={group.id} />}
+          {isOwner && !isPersonal && (
+            <>
+              <ArchiveGroupButton groupId={group.id} archived={isArchived} />
+              <DeleteGroupButton groupId={group.id} groupName={group.name} />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

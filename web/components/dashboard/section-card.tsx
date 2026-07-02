@@ -17,7 +17,9 @@ export function SectionCard({
   bodyClassName?: string;
 }) {
   return (
-    <Card className={cn("p-5", className)}>
+    // min-w-0 + overflow-hidden: grid/flex içinde içerik karttan taşıp
+    // sayfayı yana kaydırmasın (mobil kayıklık koruması).
+    <Card className={cn("min-w-0 overflow-hidden p-5", className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold tracking-tight">{title}</h2>

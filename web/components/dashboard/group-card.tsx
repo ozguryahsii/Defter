@@ -30,7 +30,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
               <div>
                 <h3 className="font-semibold leading-tight">{group.name}</h3>
                 <Badge variant="secondary" className="mt-1">
-                  Tatil / Arkadaş
+                  {group.archived ? "Arşiv" : "Tatil / Arkadaş"}
                 </Badge>
               </div>
             </div>

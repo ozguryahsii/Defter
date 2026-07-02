@@ -51,7 +51,7 @@ export function CategoryDonut({
         </div>
       </div>
 
-      <ul className="grid w-full flex-1 gap-2">
+      <ul className="grid w-full min-w-0 flex-1 gap-2">
         {data.map((d, i) => (
           <li key={d.category} className="flex items-center gap-2.5 text-sm">
             <span

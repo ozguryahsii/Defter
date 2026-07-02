@@ -150,6 +150,8 @@ export async function addMember(
   if (!member) return { ok: false, error: "Bu gruba erişiminiz yok." };
   if (member.group.type === "Kisisel")
     return { ok: false, error: "Kişisel bütçe grubuna üye eklenemez." };
+  if (member.group.archivedAt)
+    return { ok: false, error: "Grup arşivde; üye eklenemez." };
 
   const name = username.trim();
   if (!name) return { ok: false, error: "Kullanıcı adı boş olamaz." };
@@ -211,6 +213,8 @@ export async function addExpense(input: {
     include: { members: true },
   });
   if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   const memberIds = new Set(group.members.map((m) => m.userId));
   const participants = [...new Set(input.participantIds)].filter((id) =>
@@ -320,6 +324,8 @@ export async function deleteExpense(
     expense.group.createdById !== session.user.id
   )
     return { ok: false, error: "Bu harcamayı silme yetkiniz yok." };
+  if (expense.group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   await prisma.expense.delete({ where: { id: expenseId } });
   await logActivity({
@@ -368,6 +374,8 @@ export async function settleTransfer(
     },
   });
   if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   const memberIds = new Set(group.members.map((m) => m.userId));
   if (!memberIds.has(fromUserId) || !memberIds.has(toUserId))
@@ -449,6 +457,8 @@ export async function remindTransfer(
     },
   });
   if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   // The outstanding transfer must actually exist, creditor-side verified.
   const { transfers } = calculateSettlement({
@@ -730,6 +740,8 @@ export async function editExpense(input: {
     expense.group.createdById !== session.user.id
   )
     return { ok: false, error: "Bu harcamayı düzenleme yetkiniz yok." };
+  if (expense.group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   const memberIds = new Set(expense.group.members.map((m) => m.userId));
   const participants = [...new Set(input.participantIds)].filter((id) =>
@@ -838,6 +850,8 @@ export async function createInvite(groupId: string): Promise<ActionState> {
   if (!member) return { ok: false, error: "Bu gruba erişiminiz yok." };
   if (member.group.type === "Kisisel")
     return { ok: false, error: "Kişisel bütçe grubuna davet oluşturulamaz." };
+  if (member.group.archivedAt)
+    return { ok: false, error: "Grup arşivde; davet oluşturulamaz." };
 
   const token = randomBytes(16).toString("hex");
   await prisma.invite.create({
@@ -864,6 +878,8 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
     return { ok: false, error: "Davet linki geçersiz." };
   if (invite.group.type === "Kisisel")
     return { ok: false, error: "Bu gruba katılım kapalı." };
+  if (invite.group.archivedAt)
+    return { ok: false, error: "Bu grup arşivlendi; katılım kapalı." };
   if (invite.expiresAt && invite.expiresAt < new Date())
     return { ok: false, error: "Davet linkinin süresi dolmuş." };
   if (invite.maxUses != null && invite.uses >= invite.maxUses)
@@ -893,6 +909,112 @@ export async function joinViaInvite(token: string): Promise<ActionState> {
 
   revalidatePath(`/groups/${invite.groupId}`);
   return { ok: true, groupId: invite.groupId };
+}
+
+// ---------------------------------------------------------------------------
+// Archive / unarchive (owner only) & leave group
+// ---------------------------------------------------------------------------
+export async function setGroupArchived(
+  groupId: string,
+  archived: boolean,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.createdById !== session.user.id)
+    return { ok: false, error: "Bunu yalnızca grup sahibi yapabilir." };
+  if (group.type === "Kisisel")
+    return { ok: false, error: "Kişisel bütçe arşivlenemez." };
+
+  await prisma.group.update({
+    where: { id: groupId },
+    data: { archivedAt: archived ? new Date() : null },
+  });
+
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "group.create",
+    summary: archived ? "Grup arşivlendi" : "Grup arşivden çıkarıldı",
+  });
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/**
+ * A member leaves the group voluntarily. Blocked for the owner and for
+ * members with an unsettled balance (their departure would corrupt the ledger).
+ */
+export async function leaveGroup(groupId: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+  const userId = session.user.id;
+
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, members: { some: { userId } } },
+    include: {
+      members: { include: { user: true } },
+      expenses: { include: { shares: true } },
+      settlements: true,
+    },
+  });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.type === "Kisisel")
+    return { ok: false, error: "Kişisel bütçeden ayrılamazsın." };
+  if (group.createdById === userId)
+    return {
+      ok: false,
+      error: "Grup sahibi ayrılamaz. İstersen grubu arşivleyebilir veya silebilirsin.",
+    };
+
+  const { balances } = calculateSettlement({
+    members: group.members.map((m) => ({
+      userId: m.userId,
+      userName: m.user.displayName ?? m.user.username,
+    })),
+    expenses: group.expenses.map((e) => ({
+      payerId: e.payerId,
+      amount: e.amount,
+      shares: e.shares.map((s) => ({ userId: s.userId, amount: s.amount })),
+    })),
+    settlements: group.settlements.map((p) => ({
+      fromUserId: p.fromUserId,
+      toUserId: p.toUserId,
+      amount: p.amount,
+    })),
+  });
+  const myBalance = balances.find((b) => b.userId === userId)?.amount ?? 0;
+  if (Math.abs(myBalance) > 0.005)
+    return {
+      ok: false,
+      error:
+        "Açık borcun/alacağın varken gruptan ayrılamazsın. Önce ödeşmeyi tamamla.",
+    };
+
+  await prisma.groupMember.deleteMany({ where: { groupId, userId } });
+
+  const name = session.user.name ?? "Bir üye";
+  await logActivity({
+    groupId,
+    actorId: userId,
+    type: "member.add",
+    summary: `${name} gruptan ayrıldı`,
+  });
+  await notify({
+    userId: group.createdById,
+    type: "member.add",
+    title: `${name} "${group.name}" grubundan ayrıldı`,
+    groupId,
+  });
+
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -998,6 +1120,8 @@ export async function addRecurring(input: {
     include: { members: true },
   });
   if (!group) return { ok: false, error: "Bu gruba erişiminiz yok." };
+  if (group.archivedAt)
+    return { ok: false, error: "Grup arşivde; değişiklik yapılamaz." };
 
   const memberIds = new Set(group.members.map((m) => m.userId));
   const participants = [...new Set(input.participantIds)].filter((id) =>

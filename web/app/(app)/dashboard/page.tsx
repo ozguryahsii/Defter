@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
           {/* Groups + side column */}
           <div className="grid gap-4 lg:grid-cols-3">
-            <div className="space-y-4 lg:col-span-2">
+            <div className="min-w-0 space-y-4 lg:col-span-2">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold tracking-tight">Gruplarım</h2>
                 <Button asChild variant="ghost" size="sm">
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <Reveal delay={0.1}>
                 <SectionCard
                   title="Kategori Dağılımı"

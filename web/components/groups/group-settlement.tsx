@@ -33,6 +33,7 @@ export function GroupSettlement({
   currency,
   currentUserId,
   payInfo = {},
+  readOnly = false,
 }: {
   groupId: string;
   transfers: Transfer[];
@@ -40,6 +41,8 @@ export function GroupSettlement({
   currency: string;
   currentUserId: string;
   payInfo?: PayInfo;
+  /** Archived group: hide all action buttons, keep the lists visible. */
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -129,7 +132,7 @@ export function GroupSettlement({
                 </div>
 
                 {/* Reminder (creditor only) sits left of the amount */}
-                {isCreditor ? (
+                {isCreditor && !readOnly ? (
                   <button
                     type="button"
                     onClick={() => onRemind(t)}
@@ -153,7 +156,7 @@ export function GroupSettlement({
                 </span>
 
                 {/* Action / hint — only the creditor can confirm */}
-                {isCreditor ? (
+                {readOnly ? null : isCreditor ? (
                   <Button
                     size="sm"
                     variant="outline"
@@ -220,7 +223,7 @@ export function GroupSettlement({
                   <span className="hidden text-[11px] text-muted-foreground sm:inline">
                     {formatDate(s.createdAt)}
                   </span>
-                  {canUndo && (
+                  {canUndo && !readOnly && (
                     <button
                       type="button"
                       onClick={() => onUndo(s)}

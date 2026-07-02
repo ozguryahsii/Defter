@@ -52,12 +52,13 @@ model Notification {
 }
 
 model Group {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  type        String   @default("Tatil") // "Tatil" | "Kisisel" (kişisel bütçe)
-  currency    String   @default("TRY")
+  type        String    @default("Tatil") // "Tatil" | "Kisisel" (kişisel bütçe)
+  currency    String    @default("TRY")
   createdById String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  archivedAt  DateTime? // set => read-only archive
 
   // Optional monthly spending budget for the group.
   monthlyBudget Float?
