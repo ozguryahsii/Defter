@@ -182,6 +182,7 @@ export function AddExpenseDialog({
       return;
     }
     toast.success(isEdit ? "Harcama güncellendi." : "Harcama eklendi.");
+    if (!isEdit) reset(); // clear the form so the next "add" starts fresh
     setOpen(false);
     router.refresh();
   }
@@ -444,7 +445,10 @@ export function AddExpenseDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                reset();
+                setOpen(false);
+              }}
             >
               Vazgeç
             </Button>

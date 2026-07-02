@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
 import { Copy, QrCode, Wallet } from "lucide-react";
+import { buildFastKarekod } from "@/lib/trkarekod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,12 +37,27 @@ export function PayDialog({
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open && iban) {
-      QRCode.toDataURL(iban, { width: 220, margin: 1 })
+    if (!open || !iban) return;
+    try {
+      // FAST TR Karekod payload (TCMB standard). FAST works in TRY only, so
+      // the amount is embedded only for TRY groups; otherwise a static code
+      // (recipient info only) is produced and the payer types the amount.
+      const payload = buildFastKarekod({
+        iban,
+        name: ibanName || creditorName,
+        amount: currency === "TRY" ? amount : undefined,
+      });
+      QRCode.toDataURL(payload, {
+        width: 220,
+        margin: 1,
+        errorCorrectionLevel: "M",
+      })
         .then(setQr)
         .catch(() => setQr(null));
+    } catch {
+      setQr(null);
     }
-  }, [open, iban]);
+  }, [open, iban, ibanName, creditorName, amount, currency]);
 
   async function copy(text: string, label: string) {
     try {
@@ -83,7 +99,9 @@ export function PayDialog({
               </div>
             )}
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <QrCode className="h-3.5 w-3.5" /> Banka uygulamandan QR&apos;ı okut
+              <QrCode className="h-3.5 w-3.5" /> Banka uygulamanın{" "}
+              <span className="font-medium">FAST / Karekod ile ödeme</span>{" "}
+              ekranından okut
             </div>
 
             <div className="space-y-2 rounded-xl border border-border/60 bg-secondary/30 p-3">
