@@ -1155,6 +1155,55 @@ export async function removeMember(
 }
 
 // ---------------------------------------------------------------------------
+// Rename group (owner only)
+// ---------------------------------------------------------------------------
+export async function renameGroup(
+  groupId: string,
+  name: string,
+): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const parsed = groupSchema.shape.name.safeParse(name);
+  if (!parsed.success)
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Geçersiz ad." };
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return { ok: false, error: "Grup bulunamadı." };
+  if (group.createdById !== session.user.id)
+    return { ok: false, error: "Grup adını yalnızca grup sahibi değiştirebilir." };
+  if (group.type === "Kisisel")
+    return { ok: false, error: "Kişisel bütçenin adı değiştirilemez." };
+  if (group.archivedAt)
+    return { ok: false, error: "Grup arşivde; önce arşivden çıkar." };
+  if (parsed.data === group.name) return { ok: true };
+
+  await prisma.group.update({
+    where: { id: groupId },
+    data: { name: parsed.data },
+  });
+
+  await logActivity({
+    groupId,
+    actorId: session.user.id,
+    type: "group.create",
+    summary: `Grup adı "${group.name}" → "${parsed.data}" olarak değiştirildi`,
+  });
+  await notifyGroupMembers({
+    groupId,
+    exceptUserId: session.user.id,
+    type: "member.add",
+    title: `Grubun adı değişti`,
+    body: `"${group.name}" grubunun yeni adı: "${parsed.data}"`,
+  });
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Archive / unarchive (owner only) & leave group
 // ---------------------------------------------------------------------------
 export async function setGroupArchived(

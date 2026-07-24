@@ -33,6 +33,7 @@ import {
   LeaveGroupButton,
 } from "@/components/groups/group-member-actions";
 import { RemoveMemberButton } from "@/components/groups/remove-member-button";
+import { RenameGroupButton } from "@/components/groups/rename-group-button";
 import { CategoryDonut } from "@/components/charts/category-donut";
 
 export function GroupScreen({
@@ -206,9 +207,17 @@ export function GroupScreen({
             <Icon className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {group.name}
-            </h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {group.name}
+              </h1>
+              {!isPersonal && isOwner && !isArchived && (
+                <RenameGroupButton
+                  groupId={group.id}
+                  currentName={group.name}
+                />
+              )}
+            </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <Badge variant={isPersonal ? "brand" : "secondary"}>
                 {isPersonal ? "Kişisel" : "Tatil / Arkadaş"}
