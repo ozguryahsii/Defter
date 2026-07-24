@@ -20,7 +20,11 @@ export function Topbar({
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl lg:px-8">
+    <header
+      className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl lg:px-8"
+      // Çentik/Dynamic Island altında kalmasın (native iOS kabuğu + PWA)
+      style={{ height: "calc(4rem + var(--safe-top))", paddingTop: "var(--safe-top)" }}
+    >
       {/* Mobile menu */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>

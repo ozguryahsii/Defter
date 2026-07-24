@@ -16,7 +16,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <TooltipProvider delayDuration={200}>
           {children}
-          <Toaster position="top-right" richColors closeButton />
+          {/* offset: bildirimler çentik/durum çubuğunun altına girmesin */}
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            offset={{ top: "calc(var(--safe-top) + 16px)" }}
+            mobileOffset={{ top: "calc(var(--safe-top) + 12px)" }}
+          />
         </TooltipProvider>
       </ThemeProvider>
     </SessionProvider>
