@@ -23,7 +23,9 @@ const config: CapacitorConfig = {
     cleartext: true,
   },
   ios: {
-    contentInset: "always",
+    // Güvenli alan (çentik) boşluklarını web tarafı CSS ile yönetiyor;
+    // native tarafın ekstra içeri itmesi kaymaya yol açıyordu.
+    contentInset: "never",
     backgroundColor: "#09090b",
   },
 };

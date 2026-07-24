@@ -27,6 +27,10 @@ export const viewport: Viewport = {
   themeColor: "#0b0b0f",
   width: "device-width",
   initialScale: 1,
+  // iOS, 16px altındaki inputlara odaklanınca sayfayı kendiliğinden
+  // yakınlaştırıp kaydırıyor; uygulama hissi için zoom sabitlendi.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover", // çentikli ekranlarda güvenli alan değişkenleri için
 };
 
