@@ -17,9 +17,13 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { username: credentials.username.trim() },
-        });
+        // Büyük/küçük harfe duyarsız arama: mobil klavyeler ilk harfi
+        // kendiliğinden büyütebiliyor ("Demo" ≠ "demo" girişini engellemesin).
+        const rows = await prisma.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "User"
+          WHERE LOWER(username) = LOWER(${credentials.username.trim()}) LIMIT 1`;
+        if (rows.length === 0) return null;
+        const user = await prisma.user.findUnique({ where: { id: rows[0].id } });
         if (!user) return null;
 
         const ok = await bcrypt.compare(credentials.password, user.passwordHash);

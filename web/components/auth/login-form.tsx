@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Heart, Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
@@ -58,6 +59,9 @@ export function LoginForm() {
             id="username"
             name="username"
             autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="kullaniciadi"
             required
             autoFocus
@@ -65,10 +69,9 @@ export function LoginForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Parola</Label>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             required

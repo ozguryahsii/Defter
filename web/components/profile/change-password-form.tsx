@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { KeyRound, Loader2 } from "lucide-react";
 import { changePassword } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function ChangePasswordForm() {
@@ -32,10 +32,9 @@ export function ChangePasswordForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Mevcut parola</Label>
-        <Input
+        <PasswordInput
           id="currentPassword"
           name="currentPassword"
-          type="password"
           autoComplete="current-password"
           required
         />
@@ -46,10 +45,9 @@ export function ChangePasswordForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="newPassword">Yeni parola</Label>
-          <Input
+          <PasswordInput
             id="newPassword"
             name="newPassword"
-            type="password"
             autoComplete="new-password"
             placeholder="En az 8 karakter"
             required
@@ -60,10 +58,9 @@ export function ChangePasswordForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Yeni parola (tekrar)</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
-            type="password"
             autoComplete="new-password"
             required
           />

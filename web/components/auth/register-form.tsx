@@ -9,6 +9,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { registerUser } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function RegisterForm() {
@@ -57,6 +58,9 @@ export function RegisterForm() {
           id="username"
           name="username"
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder="kullaniciadi"
           required
           autoFocus
@@ -97,10 +101,9 @@ export function RegisterForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Parola</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           placeholder="En az 8 karakter"
           required
