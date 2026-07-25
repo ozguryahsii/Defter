@@ -105,16 +105,18 @@ export function ExpenseList({
       {items.map((e) => (
         <li
           key={e.id}
-          className="group flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+          // flex-wrap: metin sütunu dar kalacaksa tutar+butonlar alt satıra
+          // (sağa yaslı) iner; geniş ekranda hepsi tek satırda kalır.
+          className="group flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3 first:pt-0 last:pb-0"
         >
           <UserAvatar
             userId={e.editInit.payerId}
             name={e.payerName}
-            className="h-10 w-10"
+            className="h-10 w-10 shrink-0"
             fallbackClassName="text-[11px]"
           />
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-52">
             {/* Açıklama kısaltılmaz; kutunun sonuna kadar yazılır, gerekirse alt satıra sarar */}
             <p className="break-words text-sm font-medium leading-snug">
               {e.description}
@@ -156,7 +158,7 @@ export function ExpenseList({
             </p>
           </div>
 
-          <div className="flex items-center gap-0.5">
+          <div className="ml-auto flex items-center gap-0.5">
             <span
               className={
                 e.kind === "income"
