@@ -12,6 +12,7 @@ import { notify, notifyGroupMembers } from "./notify";
 import { saveReceipt, saveAvatar } from "./uploads";
 import { materializeRecurring } from "./recurring";
 import { isCurrencyCode } from "./currencies";
+import { requireAdmin } from "./admin";
 
 export type ActionState = {
   ok: boolean;
@@ -129,7 +130,7 @@ export async function createGroup(
       return {
         ok: false,
         error:
-          "Ücretsiz sürümde yalnızca 1 grup kurabilirsin. Sınırsız grup için Premium'a geç.",
+          "Ücretsiz sürümde yalnızca 1 grup kurabilirsin. Sınırsız grup için sağ üst menüden Premium'a göz at.",
       };
   }
 
@@ -446,7 +447,7 @@ export async function addExpense(input: {
         return {
           ok: false,
           error:
-            "Ücretsiz sürümde bir grupta en fazla 3 harcama olabilir. Sınırsız harcama için grup kurucusunun Premium'a geçmesi gerekir.",
+            "Ücretsiz sürümde bir grupta en fazla 3 harcama olabilir. Sınırsız harcama için grup kurucusunun Premium'a geçmesi gerekir (sağ üst menü → Premium).",
         };
     }
   }
@@ -1548,5 +1549,105 @@ export async function deleteRecurring(id: string): Promise<ActionState> {
 
   await prisma.recurringExpense.delete({ where: { id } });
   revalidatePath(`/groups/${tpl.groupId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Premium / discount codes
+// ---------------------------------------------------------------------------
+
+/** Kod geçerliyse yüzdeyi döner ve kullanıcıya "bu kodla geldi" kaydı düşer. */
+export async function applyDiscountCode(
+  rawCode: string,
+): Promise<ActionState & { percent?: number }> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const code = rawCode.trim().toUpperCase();
+  if (!/^[A-Z0-9]{3,20}$/.test(code))
+    return { ok: false, error: "Geçersiz kod biçimi." };
+
+  const dc = await prisma.discountCode.findUnique({ where: { code } });
+  if (!dc || !dc.active)
+    return { ok: false, error: "Kod bulunamadı veya artık geçerli değil." };
+  if (dc.expiresAt && dc.expiresAt < new Date())
+    return { ok: false, error: "Bu kodun süresi dolmuş." };
+
+  // Aynı kullanıcı aynı kodu bir kez kullanabilir; tekrar girerse sorun değil.
+  await prisma.codeRedemption.upsert({
+    where: { codeId_userId: { codeId: dc.id, userId: session.user.id } },
+    update: {},
+    create: { codeId: dc.id, userId: session.user.id },
+  });
+
+  return { ok: true, percent: dc.percent };
+}
+
+// ---------------------------------------------------------------------------
+// Admin actions — hepsi ADMIN_USERNAME (.env) doğrulamasından geçer.
+// ---------------------------------------------------------------------------
+
+export async function adminCreateCode(input: {
+  code: string;
+  percent: number;
+  influencer?: string;
+  expiresAt?: string; // yyyy-mm-dd
+}): Promise<ActionState> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Yetkin yok." };
+
+  const code = input.code.trim().toUpperCase();
+  if (!/^[A-Z0-9]{3,20}$/.test(code))
+    return { ok: false, error: "Kod 3-20 harf/rakam olmalı (örn. OZGE20)." };
+  const percent = Math.round(input.percent);
+  if (!Number.isFinite(percent) || percent < 1 || percent > 90)
+    return { ok: false, error: "İndirim %1 ile %90 arasında olmalı." };
+
+  const exists = await prisma.discountCode.findUnique({ where: { code } });
+  if (exists) return { ok: false, error: "Bu kod zaten var." };
+
+  await prisma.discountCode.create({
+    data: {
+      code,
+      percent,
+      influencer: input.influencer?.trim() || null,
+      expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+    },
+  });
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function adminSetCodeActive(
+  codeId: string,
+  active: boolean,
+): Promise<ActionState> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Yetkin yok." };
+
+  await prisma.discountCode.update({ where: { id: codeId }, data: { active } });
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Bir üyenin premium durumunu elle aç/kapat (ödeme entegrasyonuna kadar). */
+export async function adminSetPremium(
+  userId: string,
+  premium: boolean,
+  plan?: "monthly" | "yearly",
+): Promise<ActionState> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "Yetkin yok." };
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      premium,
+      premiumPlan: premium ? (plan ?? "monthly") : null,
+      premiumSource: premium ? "admin" : null,
+      premiumUntil: null,
+    },
+  });
+  revalidatePath("/admin");
   return { ok: true };
 }

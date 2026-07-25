@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { LogOut, UserRound } from "lucide-react";
+import { Crown, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +18,13 @@ export function UserMenu({
   name,
   username,
   avatarVersion,
+  isAdmin = false,
 }: {
   userId: string;
   name: string;
   username: string;
   avatarVersion?: string | null;
+  isAdmin?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -47,6 +49,18 @@ export function UserMenu({
             <UserRound /> Profil
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/premium">
+            <Crown /> Premium
+          </Link>
+        </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck /> Yönetim
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={async () => {

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdminUsername } from "@/lib/admin";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -31,6 +32,7 @@ export default async function AppLayout({
             name={session.user.name ?? session.user.username}
             username={session.user.username}
             avatarVersion={me?.avatarPath ?? null}
+            isAdmin={isAdminUsername(session.user.username)}
           />
         </div>
         {/* pb-24: mobil alt gezinme çubuğunun içeriği örtmemesi için */}

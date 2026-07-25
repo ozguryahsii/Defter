@@ -28,7 +28,10 @@ model User {
   avatarPath String?
 
   // Paid tier. False => free limits (1 group, 3 expenses per owned group).
-  premium Boolean @default(false)
+  premium       Boolean   @default(false)
+  premiumPlan   String? // "monthly" | "yearly"
+  premiumUntil  DateTime? // subscription end (null => indefinite/manual)
+  premiumSource String? // "appstore" | "playstore" | "promo" | "admin"
 
   memberships     GroupMember[]
   paidExpenses    Expense[]          @relation("Payer")
@@ -39,6 +42,34 @@ model User {
   notifications   Notification[]
   joinReqsSent    GroupJoinRequest[] @relation("JoinReqFrom")
   joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
+  codeRedemptions CodeRedemption[]
+}
+
+// Influencer discount code (e.g. OZGE20 => %20). Managed from /admin.
+model DiscountCode {
+  id         String    @id @default(cuid())
+  code       String    @unique // stored uppercase
+  percent    Int // 1-90
+  influencer String? // who promotes this code
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  redemptions CodeRedemption[]
+}
+
+// Who entered which code (referral tracking for the admin panel).
+model CodeRedemption {
+  id        String   @id @default(cuid())
+  codeId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  code DiscountCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([codeId, userId])
+  @@index([codeId, createdAt])
 }
 
 // Daily-refreshed exchange-rate table (USD base, single row).

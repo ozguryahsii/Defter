@@ -15,11 +15,13 @@ export function Topbar({
   name,
   username,
   avatarVersion,
+  isAdmin = false,
 }: {
   userId: string;
   name: string;
   username: string;
   avatarVersion?: string | null;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -58,6 +60,7 @@ export function Topbar({
           name={name}
           username={username}
           avatarVersion={avatarVersion}
+          isAdmin={isAdmin}
         />
       </div>
     </header>

@@ -13,5 +13,7 @@ export const config = {
     "/profile/:path*",
     "/join/:path*",
     "/tools/:path*",
+    "/premium/:path*",
+    "/admin/:path*",
   ],
 };
