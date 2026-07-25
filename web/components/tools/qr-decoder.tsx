@@ -5,6 +5,7 @@ import jsQR from "jsqr";
 import { toast } from "sonner";
 import { Copy, ImageUp, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 
 /**
  * Client-side QR decoder. Tries the image at several scales and inversion
@@ -32,6 +33,7 @@ async function decodeImage(file: File): Promise<string | null> {
 }
 
 export function QrDecoder() {
+  const t = useT();
   const [results, setResults] = useState<{ name: string; text: string }[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -44,10 +46,10 @@ export function QrDecoder() {
         const text = await decodeImage(file);
         next.push({
           name: file.name,
-          text: text ?? "(çözülemedi — daha net/yakın bir görüntü dene)",
+          text: text ?? t("(çözülemedi — daha net/yakın bir görüntü dene)"),
         });
       } catch {
-        next.push({ name: file.name, text: "(görsel okunamadı)" });
+        next.push({ name: file.name, text: t("(görsel okunamadı)") });
       }
     }
     setResults((prev) => [...next, ...prev]);
@@ -56,7 +58,7 @@ export function QrDecoder() {
 
   async function copy(text: string) {
     await navigator.clipboard.writeText(text);
-    toast.success("Kopyalandı.");
+    toast.success(t("Kopyalandı."));
   }
 
   return (
@@ -64,10 +66,10 @@ export function QrDecoder() {
       <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border/70 bg-card p-10 text-center transition-colors hover:border-brand/50">
         <ImageUp className="h-8 w-8 text-muted-foreground" />
         <span className="text-sm font-medium">
-          Karekod görseli seç (birden fazla seçebilirsin)
+          {t("Karekod görseli seç (birden fazla seçebilirsin)")}
         </span>
         <span className="text-xs text-muted-foreground">
-          PNG, JPG veya ekran görüntüsü
+          {t("PNG, JPG veya ekran görüntüsü")}
         </span>
         <input
           type="file"
@@ -80,7 +82,7 @@ export function QrDecoder() {
 
       {busy && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ScanLine className="h-4 w-4 animate-pulse" /> Çözülüyor...
+          <ScanLine className="h-4 w-4 animate-pulse" /> {t("Çözülüyor...")}
         </p>
       )}
 

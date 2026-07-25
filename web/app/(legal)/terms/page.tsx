@@ -1,8 +1,74 @@
 import type { Metadata } from "next";
+import { getLocale } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Kullanım Şartları" };
 
+function TermsEn() {
+  return (
+    <>
+      <h1>Terms of Use</h1>
+      <p>
+        SOBSO! (&quot;the App&quot;) is a tool for sharing expenses and
+        tracking debts within friend groups. By using the App you accept the
+        terms below.
+      </p>
+
+      <h2>Nature of the service</h2>
+      <ul>
+        <li>
+          The App is a <strong>bookkeeping tool</strong>; it is not a bank or
+          payment institution. Money transfers happen outside the App (e.g.
+          through your banking app).
+        </li>
+        <li>
+          Debt tables are calculated from data entered by users. Users are
+          responsible for the accuracy of what they enter.
+        </li>
+        <li>
+          A &quot;payment confirmation&quot; is merely the creditor&apos;s
+          statement; it is not a legal receipt.
+        </li>
+      </ul>
+
+      <h2>Account responsibility</h2>
+      <ul>
+        <li>Keeping your account credentials secret is your responsibility.</li>
+        <li>
+          You may not use the App for unlawful purposes, to access other
+          people&apos;s data without permission, or in ways that harm the
+          system.
+        </li>
+        <li>You declare that the IBAN on your profile belongs to you.</li>
+      </ul>
+
+      <h2>Content and data</h2>
+      <p>
+        Expense records you enter and images you upload belong to you; we
+        store them only to provide the App&apos;s functionality. See the{" "}
+        <a href="/privacy" className="text-brand hover:underline">
+          Privacy Policy
+        </a>{" "}
+        for details.
+      </p>
+
+      <h2>Service changes</h2>
+      <p>
+        Features may be improved or changed without prior notice. The service
+        is not guaranteed to be uninterrupted or error-free.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions: <strong>iletisim@sobso.net</strong>
+      </p>
+
+      <p>Last updated: July 2026</p>
+    </>
+  );
+}
+
 export default function TermsPage() {
+  if (getLocale() === "en") return <TermsEn />;
   return (
     <>
       <h1>Kullanım Şartları</h1>

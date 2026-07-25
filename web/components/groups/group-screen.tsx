@@ -210,7 +210,7 @@ export function GroupScreen({
           <div>
             <div className="flex items-center gap-1.5">
               <h1 className="text-2xl font-semibold tracking-tight">
-                {group.name}
+                {isPersonal ? t("Kişisel Bütçe") : group.name}
               </h1>
               {!isPersonal && isOwner && !isArchived && (
                 <RenameGroupButton

@@ -3,14 +3,16 @@
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useT();
   return (
     <Button
       variant="ghost"
       size="icon"
-      aria-label="Temayı değiştir"
+      aria-label={t("Temayı değiştir")}
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       className="text-muted-foreground"
     >

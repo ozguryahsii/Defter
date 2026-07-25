@@ -445,4 +445,19 @@ export const EN: Record<string, string> = {
   "Gruba ekleniyorsun...": "Joining the group...",
   "Davet linki geçersiz.": "This invite link is invalid.",
   "Gruplarıma dön": "Back to my groups",
+  "Grup bulunamadı": "Group not found",
+  "Bu grup mevcut değil ya da erişim yetkin yok.":
+    "This group doesn't exist or you don't have access.",
+  "Temayı değiştir": "Toggle theme",
+  "Karekod Çözücü": "QR Decoder",
+  "Bir karekod görselini (ekran görüntüsü/fotoğraf) yükle, içindeki ham metni gör. Görsel cihazından çıkmaz; çözümleme tarayıcıda yapılır.":
+    "Upload a QR image (screenshot/photo) to see its raw content. The image never leaves your device; decoding happens in the browser.",
+  "(çözülemedi — daha net/yakın bir görüntü dene)":
+    "(couldn't decode — try a sharper/closer image)",
+  "(görsel okunamadı)": "(couldn't read the image)",
+  "Kopyalandı.": "Copied.",
+  "Karekod görseli seç (birden fazla seçebilirsin)":
+    "Choose QR image(s) — multiple allowed",
+  "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
+  "Çözülüyor...": "Decoding...",
 };
