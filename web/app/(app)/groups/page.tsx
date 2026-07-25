@@ -8,24 +8,26 @@ import { GroupCard } from "@/components/dashboard/group-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/magic/reveal";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Gruplar" };
 
 export default async function GroupsPage() {
   const session = await auth();
   const groups = await getGroupsList(session!.user.id);
+  const t = getT();
   const active = groups.filter((g) => !g.archived);
   const archived = groups.filter((g) => g.archived);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gruplar"
-        description="Katıldığın tüm ortak harcama grupları."
+        title={t("Gruplar")}
+        description={t("Katıldığın tüm ortak harcama grupları.")}
       >
         <Button asChild variant="brand">
           <Link href="/groups/new">
-            <Plus /> Yeni Grup Ekle
+            <Plus /> {t("Yeni Grup Ekle")}
           </Link>
         </Button>
       </PageHeader>
@@ -33,16 +35,16 @@ export default async function GroupsPage() {
       {groups.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="Henüz bir grubun yok"
-          description="Bir tatil ya da arkadaş grubu için ilk grubunu oluştur ve arkadaşlarını davet et."
-          actionLabel="İlk grubunu oluştur"
+          title={t("Henüz bir grubun yok")}
+          description={t("Bir tatil ya da arkadaş grubu için ilk grubunu oluştur ve arkadaşlarını davet et.")}
+          actionLabel={t("İlk grubunu oluştur")}
           actionHref="/groups/new"
         />
       ) : (
         <>
           {active.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aktif grubun yok — hepsi arşivde.
+              {t("Aktif grubun yok — hepsi arşivde.")}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -57,7 +59,7 @@ export default async function GroupsPage() {
           {archived.length > 0 && (
             <section className="space-y-4">
               <h2 className="flex items-center gap-2 font-semibold tracking-tight text-muted-foreground">
-                <Archive className="h-4 w-4" /> Arşiv ({archived.length})
+                <Archive className="h-4 w-4" /> {t("Arşiv")} ({archived.length})
               </h2>
               <div className="grid gap-4 opacity-75 sm:grid-cols-2 xl:grid-cols-3">
                 {archived.map((g, i) => (

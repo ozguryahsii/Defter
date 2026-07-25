@@ -3,6 +3,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { ChartTooltip } from "./chart-tooltip";
 import { formatCurrency } from "@/lib/format";
+import { useT } from "@/components/i18n-provider";
 
 const COLORS = [
   "hsl(var(--brand))",
@@ -20,6 +21,7 @@ export function CategoryDonut({
   data: { category: string; amount: number }[];
   currency?: string;
 }) {
+  const t = useT();
   const total = data.reduce((s, d) => s + d.amount, 0);
 
   return (
@@ -44,7 +46,7 @@ export function CategoryDonut({
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xs text-muted-foreground">Toplam</span>
+          <span className="text-xs text-muted-foreground">{t("Toplam")}</span>
           <span className="text-lg font-semibold">
             {total >= 1000 ? `${Math.round(total / 1000)}k` : total}
           </span>

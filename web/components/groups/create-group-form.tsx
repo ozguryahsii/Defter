@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { createGroup } from "@/lib/actions";
 import { CURRENCIES } from "@/lib/currencies";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ import {
 
 export function CreateGroupForm() {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -32,10 +34,10 @@ export function CreateGroupForm() {
     if (!res.ok || !res.groupId) {
       setLoading(false);
       if (res.fieldErrors) setErrors(res.fieldErrors);
-      if (res.error) toast.error(res.error);
+      if (res.error) toast.error(t(res.error));
       return;
     }
-    toast.success("Grup oluşturuldu!");
+    toast.success(t("Grup oluşturuldu!"));
     router.push(`/groups/${res.groupId}`);
     router.refresh();
   }
@@ -43,19 +45,19 @@ export function CreateGroupForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Grup adı</Label>
+        <Label htmlFor="name">{t("Grup adı")}</Label>
         <Input
           id="name"
           name="name"
-          placeholder="Örn. Bodrum Tatili 2026"
+          placeholder={t("Örn. Bodrum Tatili 2026")}
           required
           autoFocus
         />
-        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+        {errors.name && <p className="text-xs text-destructive">{t(errors.name)}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="currency">Para birimi</Label>
+        <Label htmlFor="currency">{t("Para birimi")}</Label>
         <Select name="currency" defaultValue="TRY">
           <SelectTrigger id="currency">
             <SelectValue />
@@ -76,11 +78,11 @@ export function CreateGroupForm() {
           variant="outline"
           onClick={() => router.push("/groups")}
         >
-          Vazgeç
+          {t("Vazgeç")}
         </Button>
         <Button type="submit" variant="brand" disabled={loading}>
           {loading && <Loader2 className="animate-spin" />}
-          Oluştur
+          {t("Oluştur")}
         </Button>
       </div>
     </form>

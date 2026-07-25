@@ -1,5 +1,8 @@
+"use client";
+
 import { UserAvatar } from "@/components/user-avatar";
 import { formatCurrency } from "@/lib/format";
+import { useT } from "@/components/i18n-provider";
 import type { Balance } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +15,7 @@ export function BalanceList({
   currency: string;
   currentUserId?: string;
 }) {
+  const t = useT();
   const max = Math.max(1, ...balances.map((b) => Math.abs(b.amount)));
 
   return (
@@ -34,7 +38,7 @@ export function BalanceList({
                   {b.userName}
                   {b.userId === currentUserId && (
                     <span className="ml-1 text-xs text-muted-foreground">
-                      (sen)
+                      {t("(sen)")}
                     </span>
                   )}
                 </span>

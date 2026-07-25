@@ -3,25 +3,27 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Yeni Grup" };
 
 export default function NewGroupPage() {
+  const t = getT();
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
         href="/groups"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Gruplar
+        <ArrowLeft className="h-4 w-4" /> {t("Gruplar")}
       </Link>
 
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-gradient">
-          Yeni Grup Ekle
+          {t("Yeni Grup Ekle")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Bir grup oluştur, sonra kullanıcı adına göre arkadaşlarını ekle.
+          {t("Bir grup oluştur, sonra kullanıcı adına göre arkadaşlarını ekle.")}
         </p>
       </div>
 

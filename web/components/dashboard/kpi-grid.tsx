@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 export type KpiRow = { left: string; sub?: string; right: string };
 
@@ -53,6 +54,7 @@ const TONE: Record<string, string> = {
  * Clickable KPI tiles; each opens a dialog listing the rows behind the number.
  */
 export function KpiGrid({ items }: { items: KpiItem[] }) {
+  const t = useT();
   const [openKey, setOpenKey] = useState<string | null>(null);
   const active = items.find((i) => i.key === openKey) ?? null;
 
@@ -107,7 +109,7 @@ export function KpiGrid({ items }: { items: KpiItem[] }) {
               <DialogHeader>
                 <DialogTitle>{active.label}</DialogTitle>
                 <DialogDescription>
-                  {active.detailHint ?? "Bu tutarın dökümü"}
+                  {active.detailHint ?? t("Bu tutarın dökümü")}
                 </DialogDescription>
               </DialogHeader>
               {active.rows.length === 0 ? (

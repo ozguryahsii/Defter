@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import type { GroupSummary } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 export function GroupCard({ group }: { group: GroupSummary }) {
+  const t = useT();
   const Icon = Plane;
   const balance = group.yourBalance;
   const settled = Math.abs(balance) < 0.005;
@@ -30,7 +32,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
               <div>
                 <h3 className="font-semibold leading-tight">{group.name}</h3>
                 <Badge variant="secondary" className="mt-1">
-                  {group.archived ? "Arşiv" : "Tatil / Arkadaş"}
+                  {group.archived ? t("Arşiv") : t("Tatil / Arkadaş")}
                 </Badge>
               </div>
             </div>
@@ -39,7 +41,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
 
           <div className="mt-5 flex items-end justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Toplam harcama</p>
+              <p className="text-xs text-muted-foreground">{t("Toplam harcama")}</p>
               <p className="text-xl font-semibold tracking-tight">
                 {formatCurrency(group.total, group.currency)}
               </p>
@@ -49,7 +51,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
 
           <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
             <span className="text-xs text-muted-foreground">
-              {group.expenseCount} harcama
+              {t("{n} harcama", { n: group.expenseCount })}
             </span>
             <span
               className={cn(
@@ -62,7 +64,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
               )}
             >
               {settled
-                ? "Ödeşildi"
+                ? t("Ödeşildi")
                 : balance > 0
                   ? `+${formatCurrency(balance, group.currency)}`
                   : formatCurrency(balance, group.currency)}

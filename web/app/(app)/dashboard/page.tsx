@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/magic/reveal";
 import { Button } from "@/components/ui/button";
 import { CategoryDonut } from "@/components/charts/category-donut";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Genel Bakış" };
 
@@ -20,17 +21,18 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
   const data = await getDashboardData(userId);
+  const t = getT();
   const cur = data.primaryCurrency;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Merhaba, ${session!.user.name} 👋`}
-        description="Tüm gruplarındaki harcama ve borç durumunun özeti. (Kişisel Bütçe alanındaki harcama ve gelirler bu alana yansıtılmaz.)"
+        title={t("Merhaba, {name} 👋", { name: session!.user.name ?? "" })}
+        description={t("Tüm gruplarındaki harcama ve borç durumunun özeti. (Kişisel Bütçe alanındaki harcama ve gelirler bu alana yansıtılmaz.)")}
       >
         <Button asChild variant="brand">
           <Link href="/groups/new">
-            <Plus /> Yeni Grup Ekle
+            <Plus /> {t("Yeni Grup Ekle")}
           </Link>
         </Button>
       </PageHeader>
@@ -38,9 +40,9 @@ export default async function DashboardPage() {
       {data.groups.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="Henüz bir grubun yok"
-          description="Bir tatil ya da arkadaş grubu için ilk grubunu oluştur, arkadaşlarını ekle ve harcamaları girmeye başla."
-          actionLabel="İlk grubunu oluştur"
+          title={t("Henüz bir grubun yok")}
+          description={t("Bir tatil ya da arkadaş grubu için ilk grubunu oluştur, arkadaşlarını ekle ve harcamaları girmeye başla.")}
+          actionLabel={t("İlk grubunu oluştur")}
           actionHref="/groups/new"
         />
       ) : (
@@ -50,56 +52,56 @@ export default async function DashboardPage() {
             items={[
               {
                 key: "spent",
-                label: "Toplam Harcama",
+                label: t("Toplam Harcama"),
                 value: formatCurrency(data.kpis.totalSpent, cur),
-                hint: "tüm gruplar",
+                hint: t("tüm gruplar"),
                 icon: "wallet",
                 rows: data.details.spent,
-                emptyText: "Henüz harcama yok.",
-                detailHint: "Grup bazında toplam harcamalar",
+                emptyText: t("Henüz harcama yok."),
+                detailHint: t("Grup bazında toplam harcamalar"),
               },
               {
                 key: "paid",
-                label: "Senin Ödediğin",
+                label: t("Senin Ödediğin"),
                 value: formatCurrency(data.kpis.youPaid, cur),
-                hint: "cebinden çıkan",
+                hint: t("cebinden çıkan"),
                 tone: "brand",
                 icon: "receipt",
                 rows: data.details.paid,
-                emptyText: "Henüz ödeme yapmadın.",
-                detailHint: "Grup bazında senin ödediklerin",
+                emptyText: t("Henüz ödeme yapmadın."),
+                detailHint: t("Grup bazında senin ödediklerin"),
               },
               {
                 key: "owed",
-                label: "Sana Borçlu",
+                label: t("Sana Borçlu"),
                 value: formatCurrency(data.kpis.owedToYou, cur),
-                hint: "alacağın",
+                hint: t("alacağın"),
                 tone: "success",
                 icon: "in",
                 rows: data.details.owedToYou,
-                emptyText: "Kimsenin sana borcu yok.",
-                detailHint: "Kim, hangi gruptan, ne kadar borçlu",
+                emptyText: t("Kimsenin sana borcu yok."),
+                detailHint: t("Kim, hangi gruptan, ne kadar borçlu"),
               },
               {
                 key: "owe",
-                label: "Senin Borcun",
+                label: t("Senin Borcun"),
                 value: formatCurrency(data.kpis.youOwe, cur),
-                hint: "ödeyeceğin",
+                hint: t("ödeyeceğin"),
                 tone: "destructive",
                 icon: "out",
                 rows: data.details.youOwe,
-                emptyText: "Borcun yok. 🎉",
-                detailHint: "Kime, hangi grupta, ne kadar borçlusun",
+                emptyText: t("Borcun yok. 🎉"),
+                detailHint: t("Kime, hangi grupta, ne kadar borçlusun"),
               },
               {
                 key: "pending",
-                label: "Bekleyen Ödeşme",
-                value: `${data.kpis.pendingSettlements} işlem`,
-                hint: "seni ilgilendiren",
+                label: t("Bekleyen Ödeşme"),
+                value: t("{n} işlem", { n: data.kpis.pendingSettlements }),
+                hint: t("seni ilgilendiren"),
                 icon: "scale",
                 rows: data.details.pending,
-                emptyText: "Bekleyen ödeşme yok.",
-                detailHint: "Seni ilgilendiren açık transferler",
+                emptyText: t("Bekleyen ödeşme yok."),
+                detailHint: t("Seni ilgilendiren açık transferler"),
               },
             ]}
           />
@@ -108,10 +110,10 @@ export default async function DashboardPage() {
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="min-w-0 space-y-4 lg:col-span-2">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold tracking-tight">Gruplarım</h2>
+                <h2 className="font-semibold tracking-tight">{t("Gruplarım")}</h2>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/groups">
-                    Tümü <ArrowRight />
+                    {t("Tümü")} <ArrowRight />
                   </Link>
                 </Button>
               </div>
@@ -125,14 +127,14 @@ export default async function DashboardPage() {
             <div className="min-w-0 space-y-4">
               <Reveal delay={0.1}>
                 <SectionCard
-                  title="Kategori Dağılımı"
-                  description="Nereye harcandı?"
+                  title={t("Kategori Dağılımı")}
+                  description={t("Nereye harcandı?")}
                 >
                   {data.categoryBreakdown.length ? (
                     <CategoryDonut data={data.categoryBreakdown} currency={cur} />
                   ) : (
                     <p className="py-10 text-center text-sm text-muted-foreground">
-                      Kategori verisi yok.
+                      {t("Kategori verisi yok.")}
                     </p>
                   )}
                 </SectionCard>
@@ -140,8 +142,8 @@ export default async function DashboardPage() {
 
               <Reveal delay={0.15}>
                 <SectionCard
-                  title="Son Hareketler"
-                  description="En güncel harcamalar"
+                  title={t("Son Hareketler")}
+                  description={t("En güncel harcamalar")}
                 >
                   <RecentExpenses items={data.recentExpenses} />
                 </SectionCard>

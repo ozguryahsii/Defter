@@ -1,6 +1,9 @@
+"use client";
+
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatCurrency } from "@/lib/format";
+import { useT } from "@/components/i18n-provider";
 import type { Transfer } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
 
@@ -13,12 +16,13 @@ export function SettlementList({
   currency: string;
   currentUserId?: string;
 }) {
+  const t = useT();
   if (transfers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-success/40 bg-success/5 py-10 text-center">
         <CheckCircle2 className="h-8 w-8 text-success" />
         <p className="text-sm font-medium text-success">
-          Herkes ödeşmiş — bekleyen borç yok.
+          {t("Herkes ödeşmiş — bekleyen borç yok.")}
         </p>
       </div>
     );
