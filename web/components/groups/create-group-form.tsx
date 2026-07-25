@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { createGroup } from "@/lib/actions";
+import { CURRENCIES } from "@/lib/currencies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,11 +60,12 @@ export function CreateGroupForm() {
           <SelectTrigger id="currency">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="TRY">₺ TRY — Türk Lirası</SelectItem>
-            <SelectItem value="USD">$ USD — Dolar</SelectItem>
-            <SelectItem value="EUR">€ EUR — Euro</SelectItem>
-            <SelectItem value="GBP">£ GBP — Sterlin</SelectItem>
+          <SelectContent className="max-h-72">
+            {CURRENCIES.map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {c.code} — {c.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

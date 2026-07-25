@@ -11,8 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityItem } from "@/lib/queries";
-import { initials } from "@/lib/format";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 
 const ICONS: Record<string, LucideIcon> = {
   "expense.add": Plus,
@@ -63,11 +62,12 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm leading-snug">{a.summary}</p>
               <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Avatar className="h-4 w-4">
-                  <AvatarFallback className="text-[8px]">
-                    {initials(a.actorName)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  userId={a.actorId}
+                  name={a.actorName}
+                  className="h-4 w-4"
+                  fallbackClassName="text-[8px]"
+                />
                 {a.actorName} · {relativeTime(a.createdAt)}
               </p>
             </div>

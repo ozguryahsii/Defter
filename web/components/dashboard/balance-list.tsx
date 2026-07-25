@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { formatCurrency, initials } from "@/lib/format";
+import { UserAvatar } from "@/components/user-avatar";
+import { formatCurrency } from "@/lib/format";
 import type { Balance } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +22,12 @@ export function BalanceList({
         const positive = b.amount > 0;
         return (
           <li key={b.userId} className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="text-[10px]">
-                {initials(b.userName)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              userId={b.userId}
+              name={b.userName}
+              className="h-9 w-9"
+              fallbackClassName="text-[10px]"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
                 <span className="truncate text-sm font-medium">

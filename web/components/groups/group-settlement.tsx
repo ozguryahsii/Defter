@@ -12,9 +12,9 @@ import {
   Lock,
   Undo2,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate, initials } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { remindTransfer, settleTransfer, unsettleTransfer } from "@/lib/actions";
 import type { Transfer } from "@/lib/settlement";
 import type { SettledItem } from "@/lib/queries";
@@ -114,20 +114,22 @@ export function GroupSettlement({
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-[10px]">
-                      {initials(t.fromUserName)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={t.fromUserId}
+                    name={t.fromUserName}
+                    className="h-8 w-8"
+                    fallbackClassName="text-[10px]"
+                  />
                   <span className="text-sm font-medium">{t.fromUserName}</span>
                 </div>
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-[10px]">
-                      {initials(t.toUserName)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={t.toUserId}
+                    name={t.toUserName}
+                    className="h-8 w-8"
+                    fallbackClassName="text-[10px]"
+                  />
                   <span className="text-sm font-medium">{t.toUserName}</span>
                 </div>
 

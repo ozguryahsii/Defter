@@ -20,6 +20,7 @@ export default async function AppLayout({
       <div className="lg:pl-64 print:pl-0">
         <div className="print:hidden">
           <Topbar
+            userId={session.user.id}
             name={session.user.name ?? session.user.username}
             username={session.user.username}
           />

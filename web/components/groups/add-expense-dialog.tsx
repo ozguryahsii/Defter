@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Loader2, Plus } from "lucide-react";
 import { addExpense, editExpense } from "@/lib/actions";
 import { equalShares } from "@/lib/settlement";
-import { formatCurrency, initials } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { CURRENCIES } from "@/lib/currencies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +90,28 @@ export function AddExpenseDialog({
   );
   const [entryCurrency, setEntryCurrency] = useState(currency);
   const [fxRate, setFxRate] = useState("");
+  const [fxAuto, setFxAuto] = useState(false); // kur API'den mi geldi?
+
+  // Yabancı para seçilince güncel kuru otomatik getir (elle değiştirilebilir).
+  useEffect(() => {
+    if (entryCurrency === currency) {
+      setFxAuto(false);
+      return;
+    }
+    let cancelled = false;
+    setFxAuto(false);
+    fetch(`/api/fx?from=${entryCurrency}&to=${currency}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { rate?: number } | null) => {
+        if (cancelled || !data?.rate) return;
+        setFxRate(String(Math.round(data.rate * 10000) / 10000));
+        setFxAuto(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entryCurrency, currency]);
 
   const enteredAmount = parseFloat(amount) || 0;
   const isForeign = entryCurrency !== currency;
@@ -98,7 +121,6 @@ export function AddExpenseDialog({
     ? Math.round(enteredAmount * rate * 100) / 100
     : enteredAmount;
 
-  const CURRENCIES = ["TRY", "USD", "EUR", "GBP"];
 
   const exactSum = useMemo(
     () =>
@@ -268,8 +290,8 @@ export function AddExpenseDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {CURRENCIES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -300,10 +322,18 @@ export function AddExpenseDialog({
                 min="0"
                 inputMode="decimal"
                 value={fxRate}
-                onChange={(e) => setFxRate(e.target.value)}
+                onChange={(e) => {
+                  setFxRate(e.target.value);
+                  setFxAuto(false);
+                }}
                 placeholder="Örn. 35.20"
                 required
               />
+              {fxAuto && (
+                <p className="text-xs text-muted-foreground">
+                  Güncel kur otomatik alındı; istersen elle değiştirebilirsin.
+                </p>
+              )}
               {numericAmount > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {enteredAmount} {entryCurrency} ≈{" "}
@@ -410,11 +440,12 @@ export function AddExpenseDialog({
                     >
                       {checked && <Check className="h-3.5 w-3.5" />}
                     </button>
-                    <Avatar className="h-7 w-7">
-                      <AvatarFallback className="text-[10px]">
-                        {initials(m.name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      userId={m.userId}
+                      name={m.name}
+                      className="h-7 w-7"
+                      fallbackClassName="text-[10px]"
+                    />
                     <span className="flex-1 text-sm">{m.name}</span>
                     {splitType === "Exact" && checked && (
                       <Input

@@ -24,6 +24,12 @@ model User {
   iban     String?
   ibanName String?
 
+  // Profile photo filename (stored on disk next to receipts).
+  avatarPath String?
+
+  // Paid tier. False => free limits (1 group, 3 expenses per owned group).
+  premium Boolean @default(false)
+
   memberships     GroupMember[]
   paidExpenses    Expense[]          @relation("Payer")
   shares          ExpenseShare[]
@@ -33,6 +39,13 @@ model User {
   notifications   Notification[]
   joinReqsSent    GroupJoinRequest[] @relation("JoinReqFrom")
   joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
+}
+
+// Daily-refreshed exchange-rate table (USD base, single row).
+model FxCache {
+  id        Int      @id
+  rates     String // JSON: { "TRY": 41.2, "EUR": 0.92, ... }
+  fetchedAt DateTime
 }
 
 // Consent-based membership: adding someone creates a request they must accept.

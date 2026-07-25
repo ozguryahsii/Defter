@@ -9,8 +9,9 @@ import { randomBytes } from "crypto";
 import { equalShares, calculateSettlement } from "./settlement";
 import { logActivity } from "./activity";
 import { notify, notifyGroupMembers } from "./notify";
-import { saveReceipt } from "./uploads";
+import { saveReceipt, saveAvatar } from "./uploads";
 import { materializeRecurring } from "./recurring";
+import { isCurrencyCode } from "./currencies";
 
 export type ActionState = {
   ok: boolean;
@@ -95,7 +96,7 @@ export async function registerUser(
 // ---------------------------------------------------------------------------
 const groupSchema = z.object({
   name: z.string().trim().min(1, "Grup adı gerekli").max(100),
-  currency: z.enum(["TRY", "USD", "EUR", "GBP"]),
+  currency: z.string().refine(isCurrencyCode, "Geçersiz para birimi"),
 });
 
 export async function createGroup(
@@ -113,6 +114,23 @@ export async function createGroup(
     const fe: Record<string, string> = {};
     for (const issue of parsed.error.issues) fe[String(issue.path[0])] = issue.message;
     return { ok: false, fieldErrors: fe };
+  }
+
+  // Free sürüm limiti: kullanıcı başına 1 grup (kişisel bütçe hariç).
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { premium: true },
+  });
+  if (!me?.premium) {
+    const owned = await prisma.group.count({
+      where: { createdById: session.user.id, type: { not: "Kisisel" } },
+    });
+    if (owned >= 1)
+      return {
+        ok: false,
+        error:
+          "Ücretsiz sürümde yalnızca 1 grup kurabilirsin. Sınırsız grup için Premium'a geç.",
+      };
   }
 
   const group = await prisma.group.create({
@@ -413,6 +431,26 @@ export async function addExpense(input: {
   if (kind === "income" && group.type !== "Kisisel")
     return { ok: false, error: "Gelir yalnızca kişisel bütçeye eklenebilir." };
 
+  // Free sürüm limiti: kurucusu premium olmayan grupta en fazla 3 harcama
+  // (kim eklerse eklesin). Kişisel bütçe sınırsızdır.
+  if (group.type !== "Kisisel") {
+    const owner = await prisma.user.findUnique({
+      where: { id: group.createdById },
+      select: { premium: true },
+    });
+    if (!owner?.premium) {
+      const expenseCount = await prisma.expense.count({
+        where: { groupId: group.id },
+      });
+      if (expenseCount >= 3)
+        return {
+          ok: false,
+          error:
+            "Ücretsiz sürümde bir grupta en fazla 3 harcama olabilir. Sınırsız harcama için grup kurucusunun Premium'a geçmesi gerekir.",
+        };
+    }
+  }
+
   let shares: { userId: string; amount: number }[];
   if (kind === "income") {
     // Income is balance-neutral: the payer "receives" their own amount.
@@ -433,7 +471,7 @@ export async function addExpense(input: {
   }
 
   const hasFx =
-    !!input.originalCurrency &&
+    isCurrencyCode(input.originalCurrency) &&
     input.originalCurrency !== group.currency &&
     Number.isFinite(input.fxRate) &&
     (input.fxRate ?? 0) > 0;
@@ -748,6 +786,41 @@ const profileSchema = z.object({
     .optional(),
   ibanName: z.string().trim().max(120).optional(),
 });
+
+/** Profil fotoğrafı yükler (herkese açık özellik). */
+export async function updateAvatar(formData: FormData): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0)
+    return { ok: false, error: "Bir fotoğraf seçmelisin." };
+
+  const saved = await saveAvatar(session.user.id, file);
+  if (!saved.ok) return saved;
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { avatarPath: saved.filename },
+  });
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Profil fotoğrafını kaldırır (baş harflere geri dönülür). */
+export async function removeAvatar(): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: "Oturum bulunamadı." };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { avatarPath: null },
+  });
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
 
 export async function updateProfile(
   _prev: ActionState,

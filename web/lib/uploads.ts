@@ -42,6 +42,32 @@ export async function saveReceipt(
   return { ok: true, filename };
 }
 
+export const MAX_AVATAR_BYTES = 4 * 1024 * 1024; // 4 MB
+
+/** Persists a profile photo and returns the stored filename. */
+export async function saveAvatar(
+  userId: string,
+  file: File,
+): Promise<{ ok: true; filename: string } | { ok: false; error: string }> {
+  const ext = extensionFor(file.type);
+  if (!ext) return { ok: false, error: "Sadece JPG, PNG veya WEBP yükleyebilirsiniz." };
+  if (file.size > MAX_AVATAR_BYTES)
+    return { ok: false, error: "Fotoğraf 4 MB'tan büyük olamaz." };
+
+  const dir = uploadDir();
+  await fs.mkdir(dir, { recursive: true });
+  const filename = `avatar_${userId}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(path.join(dir, filename), buffer);
+
+  // Farklı uzantılı eski fotoğraf kalmışsa temizle.
+  for (const other of ALLOWED.values()) {
+    if (other === ext) continue;
+    await fs.unlink(path.join(dir, `avatar_${userId}.${other}`)).catch(() => {});
+  }
+  return { ok: true, filename };
+}
+
 export async function readReceipt(
   filename: string,
 ): Promise<{ data: Buffer; contentType: string } | null> {

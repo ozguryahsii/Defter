@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Topbar({
+  userId,
   name,
   username,
 }: {
+  userId: string;
   name: string;
   username: string;
 }) {
@@ -49,7 +51,7 @@ export function Topbar({
         <NotificationBell />
         <ThemeToggle />
         <div className="mx-1 h-6 w-px bg-border" />
-        <UserMenu name={name} username={username} />
+        <UserMenu userId={userId} name={name} username={username} />
       </div>
     </header>
   );

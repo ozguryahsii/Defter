@@ -44,7 +44,7 @@ export function GroupCard({ group }: { group: GroupSummary }) {
                 {formatCurrency(group.total, group.currency)}
               </p>
             </div>
-            <AvatarStack names={group.members.map((m) => m.name)} />
+            <AvatarStack users={group.members} />
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">

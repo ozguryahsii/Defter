@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { formatCurrency, initials } from "@/lib/format";
+import { UserAvatar } from "@/components/user-avatar";
+import { formatCurrency } from "@/lib/format";
 import type { Transfer } from "@/lib/settlement";
 import { cn } from "@/lib/utils";
 
@@ -40,20 +40,22 @@ export function SettlementList({
             )}
           >
             <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-[10px]">
-                  {initials(t.fromUserName)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                userId={t.fromUserId}
+                name={t.fromUserName}
+                className="h-8 w-8"
+                fallbackClassName="text-[10px]"
+              />
               <span className="text-sm font-medium">{t.fromUserName}</span>
             </div>
             <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-[10px]">
-                  {initials(t.toUserName)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                userId={t.toUserId}
+                name={t.toUserName}
+                className="h-8 w-8"
+                fallbackClassName="text-[10px]"
+              />
               <span className="text-sm font-medium">{t.toUserName}</span>
             </div>
             <span className="ml-auto text-sm font-semibold tabular-nums">

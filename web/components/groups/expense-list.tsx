@@ -13,10 +13,10 @@ import {
   Users,
 } from "lucide-react";
 import { attachReceipt, deleteExpense } from "@/lib/actions";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatDate, initials } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   AddExpenseDialog,
   type EditExpenseInit,
@@ -107,11 +107,12 @@ export function ExpenseList({
           key={e.id}
           className="group flex items-center gap-3 py-3 first:pt-0 last:pb-0"
         >
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="text-[11px]">
-              {initials(e.payerName)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userId={e.editInit.payerId}
+            name={e.payerName}
+            className="h-10 w-10"
+            fallbackClassName="text-[11px]"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

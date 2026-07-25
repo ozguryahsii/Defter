@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { AvatarForm } from "@/components/profile/avatar-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 
@@ -26,6 +27,17 @@ export default async function ProfilePage() {
           @{user.username} · görünen adını ve ödeme bilgilerini yönet
         </p>
       </div>
+
+      <SectionCard
+        title="Profil Fotoğrafı"
+        description="Fotoğrafın grup arkadaşlarına her yerde görünür"
+      >
+        <AvatarForm
+          userId={user.id}
+          name={user.displayName ?? user.username}
+          hasAvatar={!!user.avatarPath}
+        />
+      </SectionCard>
 
       <SectionCard
         title="Hesap & Ödeme Bilgileri"

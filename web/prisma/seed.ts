@@ -16,7 +16,9 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(PASSWORD, 12);
   const people = [
-    { username: "demo", displayName: "Demo Kullanıcı" },
+    // demo premium: örnek grubunda 3'ten fazla harcama var; free limitlerini
+    // denemek için ayse/mehmet/zeynep/can free bırakıldı.
+    { username: "demo", displayName: "Demo Kullanıcı", premium: true },
     { username: "ayse", displayName: "Ayşe Yıldız" },
     { username: "mehmet", displayName: "Mehmet Demir" },
     { username: "zeynep", displayName: "Zeynep Kaya" },

@@ -1,6 +1,6 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, initials } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { DashboardData } from "@/lib/queries";
 
 export function RecentExpenses({
@@ -12,11 +12,12 @@ export function RecentExpenses({
     <ul className="divide-y divide-border/60">
       {items.map((e) => (
         <li key={e.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="text-[10px]">
-              {initials(e.payerName)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userId={e.payerId}
+            name={e.payerName}
+            className="h-9 w-9"
+            fallbackClassName="text-[10px]"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{e.description}</p>
             <p className="truncate text-xs text-muted-foreground">

@@ -127,6 +127,7 @@ export type DashboardData = {
     amount: number;
     currency: string;
     date: Date;
+    payerId: string;
     payerName: string;
     groupName: string;
   }[];
@@ -243,6 +244,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         amount: e.amount,
         currency: g.currency,
         date: e.date,
+        payerId: e.payerId,
         payerName,
         groupName: g.name,
       });
@@ -301,6 +303,7 @@ export type ActivityItem = {
   id: string;
   type: string;
   summary: string;
+  actorId: string;
   actorName: string;
   createdAt: Date;
 };
@@ -383,6 +386,7 @@ export async function getGroupDetail(
     id: a.id,
     type: a.type,
     summary: a.summary,
+    actorId: a.actorId,
     actorName: a.actor.displayName ?? a.actor.username,
     createdAt: a.createdAt,
   }));

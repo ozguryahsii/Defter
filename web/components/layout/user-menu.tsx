@@ -11,22 +11,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { initials } from "@/lib/format";
+import { UserAvatar } from "@/components/user-avatar";
 
 export function UserMenu({
+  userId,
   name,
   username,
 }: {
+  userId: string;
   name: string;
   username: string;
 }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none ring-ring transition focus-visible:ring-2">
-        <Avatar className="h-9 w-9 ring-2 ring-border/60">
-          <AvatarFallback>{initials(name)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          userId={userId}
+          name={name}
+          className="h-9 w-9 ring-2 ring-border/60"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>

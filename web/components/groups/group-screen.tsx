@@ -10,9 +10,9 @@ import {
   Wallet,
 } from "lucide-react";
 import type { GroupDetail } from "@/lib/queries";
-import { formatCurrency, formatDate, initials } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { Separator } from "@/components/ui/separator";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { GroupSettlement } from "@/components/groups/group-settlement";
@@ -451,11 +451,12 @@ export function GroupScreen({
                     const name = m.user.displayName ?? m.user.username;
                     return (
                       <li key={m.userId} className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-[10px]">
-                            {initials(name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={m.userId}
+                          name={name}
+                          className="h-8 w-8"
+                          fallbackClassName="text-[10px]"
+                        />
                         <span className="flex-1 truncate text-sm">{name}</span>
                         {m.userId === group.createdById ? (
                           <Badge variant="secondary" className="text-[10px]">
