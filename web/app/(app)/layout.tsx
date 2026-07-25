@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -12,6 +13,12 @@ export default async function AppLayout({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
+  // Foto yüklenince üst menüdeki avatarın anında tazelenmesi için sürüm.
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarPath: true },
+  });
+
   return (
     <div className="min-h-screen">
       <div className="print:hidden">
@@ -23,6 +30,7 @@ export default async function AppLayout({
             userId={session.user.id}
             name={session.user.name ?? session.user.username}
             username={session.user.username}
+            avatarVersion={me?.avatarPath ?? null}
           />
         </div>
         {/* pb-24: mobil alt gezinme çubuğunun içeriği örtmemesi için */}

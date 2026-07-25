@@ -17,10 +17,12 @@ export function UserMenu({
   userId,
   name,
   username,
+  avatarVersion,
 }: {
   userId: string;
   name: string;
   username: string;
+  avatarVersion?: string | null;
 }) {
   return (
     <DropdownMenu>
@@ -28,6 +30,7 @@ export function UserMenu({
         <UserAvatar
           userId={userId}
           name={name}
+          version={avatarVersion}
           className="h-9 w-9 ring-2 ring-border/60"
         />
       </DropdownMenuTrigger>

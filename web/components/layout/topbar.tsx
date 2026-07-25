@@ -14,10 +14,12 @@ export function Topbar({
   userId,
   name,
   username,
+  avatarVersion,
 }: {
   userId: string;
   name: string;
   username: string;
+  avatarVersion?: string | null;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -51,7 +53,12 @@ export function Topbar({
         <NotificationBell />
         <ThemeToggle />
         <div className="mx-1 h-6 w-px bg-border" />
-        <UserMenu userId={userId} name={name} username={username} />
+        <UserMenu
+          userId={userId}
+          name={name}
+          username={username}
+          avatarVersion={avatarVersion}
+        />
       </div>
     </header>
   );
