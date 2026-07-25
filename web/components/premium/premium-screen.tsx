@@ -140,7 +140,7 @@ export function PremiumScreen({
               <Input
                 value={codeInput}
                 onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-                placeholder="ÖRN. OZGE20"
+                placeholder="KODUGIRINIZ"
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}

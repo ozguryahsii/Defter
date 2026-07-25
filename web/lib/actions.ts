@@ -947,6 +947,15 @@ export async function deleteAccount(
       data: {
         username: `silinen_${randomSuffix}`,
         displayName: "Silinen Kullanıcı",
+        // E-posta ve tüm kişisel veriler temizlenir; aynı e-postayla
+        // yeniden kayıt olunabilmeli.
+        email: null,
+        emailVerified: null,
+        avatarPath: null,
+        premium: false,
+        premiumPlan: null,
+        premiumSource: null,
+        premiumUntil: null,
         iban: null,
         ibanName: null,
         // Random hash: login becomes impossible.
@@ -1598,7 +1607,7 @@ export async function adminCreateCode(input: {
 
   const code = input.code.trim().toUpperCase();
   if (!/^[A-Z0-9]{3,20}$/.test(code))
-    return { ok: false, error: "Kod 3-20 harf/rakam olmalı (örn. OZGE20)." };
+    return { ok: false, error: "Kod 3-20 harf/rakam olmalı (örn. KODUGIRINIZ)." };
   const percent = Math.round(input.percent);
   if (!Number.isFinite(percent) || percent < 1 || percent > 90)
     return { ok: false, error: "İndirim %1 ile %90 arasında olmalı." };
