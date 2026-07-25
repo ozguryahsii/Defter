@@ -8,6 +8,7 @@ import { updateProfile } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/components/i18n-provider";
 
 export function ProfileForm({
   initial,
@@ -20,6 +21,7 @@ export function ProfileForm({
   };
 }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -31,17 +33,17 @@ export function ProfileForm({
     setLoading(false);
     if (!res.ok) {
       if (res.fieldErrors) setFieldErrors(res.fieldErrors);
-      if (res.error) toast.error(res.error);
+      if (res.error) toast.error(t(res.error));
       return;
     }
-    toast.success("Profil güncellendi.");
+    toast.success(t("Profil güncellendi."));
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="displayName">Görünen ad (değiştirilemez)</Label>
+        <Label htmlFor="displayName">{t("Görünen ad (değiştirilemez)")}</Label>
         <Input
           id="displayName"
           defaultValue={initial.displayName}
@@ -50,7 +52,7 @@ export function ProfileForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email">E-posta</Label>
+        <Label htmlFor="email">{t("E-posta")}</Label>
         <Input
           id="email"
           name="email"
@@ -60,7 +62,7 @@ export function ProfileForm({
           autoComplete="email"
         />
         {fieldErrors.email && (
-          <p className="text-xs text-destructive">{fieldErrors.email}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.email)}</p>
         )}
       </div>
       <div className="space-y-2">
@@ -73,25 +75,24 @@ export function ProfileForm({
           spellCheck={false}
         />
         {fieldErrors.iban && (
-          <p className="text-xs text-destructive">{fieldErrors.iban}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.iban)}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          Grup arkadaşların sana borçlarını öderken bu IBAN&apos;ı ve QR kodunu
-          görür.
+          {t("Grup arkadaşların sana borçlarını öderken bu IBAN'ı ve QR kodunu görür.")}
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="ibanName">IBAN Sahibinin Adı Soyadı</Label>
+        <Label htmlFor="ibanName">{t("IBAN Sahibinin Adı Soyadı")}</Label>
         <Input
           id="ibanName"
           name="ibanName"
           defaultValue={initial.ibanName}
-          placeholder="Ad Soyad"
+          placeholder={t("Ad Soyad")}
         />
       </div>
       <Button type="submit" variant="brand" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" /> : <Save />}
-        Kaydet
+        {t("Kaydet")}
       </Button>
     </form>
   );

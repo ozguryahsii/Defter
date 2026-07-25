@@ -7,6 +7,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { AvatarForm } from "@/components/profile/avatar-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Profil" };
 
@@ -18,19 +19,20 @@ export default async function ProfilePage() {
     where: { id: session.user.id },
   });
   if (!user) redirect("/login");
+  const t = getT();
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profil</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("Profil")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          @{user.username} · görünen adını ve ödeme bilgilerini yönet
+          @{user.username} · {t("görünen adını ve ödeme bilgilerini yönet")}
         </p>
       </div>
 
       <SectionCard
-        title="Profil Fotoğrafı"
-        description="Fotoğrafın grup arkadaşlarına her yerde görünür"
+        title={t("Profil Fotoğrafı")}
+        description={t("Fotoğrafın grup arkadaşlarına her yerde görünür")}
       >
         <AvatarForm
           userId={user.id}
@@ -40,8 +42,8 @@ export default async function ProfilePage() {
       </SectionCard>
 
       <SectionCard
-        title="Hesap & Ödeme Bilgileri"
-        description="IBAN eklersen borç ödemelerinde QR ile kolayca ödeme alırsın"
+        title={t("Hesap & Ödeme Bilgileri")}
+        description={t("IBAN eklersen borç ödemelerinde QR ile kolayca ödeme alırsın")}
       >
         <ProfileForm
           initial={{
@@ -54,8 +56,8 @@ export default async function ProfilePage() {
       </SectionCard>
 
       <SectionCard
-        title="Parola Değiştir"
-        description="Hesap güvenliğin için güçlü bir parola kullan"
+        title={t("Parola Değiştir")}
+        description={t("Hesap güvenliğin için güçlü bir parola kullan")}
       >
         <ChangePasswordForm />
       </SectionCard>

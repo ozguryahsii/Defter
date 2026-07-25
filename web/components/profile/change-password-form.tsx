@@ -7,8 +7,10 @@ import { changePassword } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/components/i18n-provider";
 
 export function ChangePasswordForm() {
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -21,17 +23,17 @@ export function ChangePasswordForm() {
     setLoading(false);
     if (!res.ok) {
       if (res.fieldErrors) setFieldErrors(res.fieldErrors);
-      if (res.error) toast.error(res.error);
+      if (res.error) toast.error(t(res.error));
       return;
     }
-    toast.success("Parolan güncellendi.");
+    toast.success(t("Parolan güncellendi."));
     form.reset();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="currentPassword">Mevcut parola</Label>
+        <Label htmlFor="currentPassword">{t("Mevcut parola")}</Label>
         <PasswordInput
           id="currentPassword"
           name="currentPassword"
@@ -39,25 +41,25 @@ export function ChangePasswordForm() {
           required
         />
         {fieldErrors.currentPassword && (
-          <p className="text-xs text-destructive">{fieldErrors.currentPassword}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.currentPassword)}</p>
         )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="newPassword">Yeni parola</Label>
+          <Label htmlFor="newPassword">{t("Yeni parola")}</Label>
           <PasswordInput
             id="newPassword"
             name="newPassword"
             autoComplete="new-password"
-            placeholder="En az 8 karakter"
+            placeholder={t("En az 8 karakter")}
             required
           />
           {fieldErrors.newPassword && (
-            <p className="text-xs text-destructive">{fieldErrors.newPassword}</p>
+            <p className="text-xs text-destructive">{t(fieldErrors.newPassword)}</p>
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Yeni parola (tekrar)</Label>
+          <Label htmlFor="confirmPassword">{t("Yeni parola (tekrar)")}</Label>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
@@ -65,13 +67,13 @@ export function ChangePasswordForm() {
             required
           />
           {fieldErrors.confirmPassword && (
-            <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>
+            <p className="text-xs text-destructive">{t(fieldErrors.confirmPassword)}</p>
           )}
         </div>
       </div>
       <Button type="submit" variant="outline" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" /> : <KeyRound />}
-        Parolayı değiştir
+        {t("Parolayı değiştir")}
       </Button>
     </form>
   );

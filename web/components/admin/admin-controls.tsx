@@ -12,10 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/components/i18n-provider";
 
 /** Yeni indirim kodu oluşturma formu. */
 export function CodeCreateForm() {
   const router = useRouter();
+  const t = useT();
   const [code, setCode] = useState("");
   const [percent, setPercent] = useState("20");
   const [influencer, setInfluencer] = useState("");
@@ -33,10 +35,10 @@ export function CodeCreateForm() {
     });
     setBusy(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Kod oluşturulamadı.");
+      toast.error(t(res.error ?? "Kod oluşturulamadı."));
       return;
     }
-    toast.success(`${code.trim().toUpperCase()} oluşturuldu.`);
+    toast.success(t("{code} oluşturuldu.", { code: code.trim().toUpperCase() }));
     setCode("");
     setInfluencer("");
     setExpiresAt("");
@@ -46,7 +48,7 @@ export function CodeCreateForm() {
   return (
     <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
       <div className="space-y-1.5">
-        <Label htmlFor="ac-code">Kod</Label>
+        <Label htmlFor="ac-code">{t("Kod")}</Label>
         <Input
           id="ac-code"
           value={code}
@@ -60,7 +62,7 @@ export function CodeCreateForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="ac-percent">İndirim (%)</Label>
+        <Label htmlFor="ac-percent">{t("İndirim (%)")}</Label>
         <Input
           id="ac-percent"
           type="number"
@@ -72,16 +74,16 @@ export function CodeCreateForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="ac-inf">Influencer (opsiyonel)</Label>
+        <Label htmlFor="ac-inf">{t("Influencer (opsiyonel)")}</Label>
         <Input
           id="ac-inf"
           value={influencer}
           onChange={(e) => setInfluencer(e.target.value)}
-          placeholder="Örn. Özge"
+          placeholder={t("Örn. Özge")}
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="ac-exp">Son kullanma (opsiyonel)</Label>
+        <Label htmlFor="ac-exp">{t("Son kullanma (opsiyonel)")}</Label>
         <Input
           id="ac-exp"
           type="date"
@@ -92,7 +94,7 @@ export function CodeCreateForm() {
       <div className="sm:col-span-2">
         <Button type="submit" variant="brand" disabled={busy}>
           {busy ? <Loader2 className="animate-spin" /> : <Plus />}
-          Kod Oluştur
+          {t("Kod Oluştur")}
         </Button>
       </div>
     </form>
@@ -108,6 +110,7 @@ export function CodeActiveToggle({
   active: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   return (
@@ -121,15 +124,15 @@ export function CodeActiveToggle({
         const res = await adminSetCodeActive(codeId, !active);
         setBusy(false);
         if (!res.ok) {
-          toast.error(res.error ?? "İşlem başarısız.");
+          toast.error(t(res.error ?? "İşlem başarısız."));
           return;
         }
-        toast.success(active ? "Kod pasifleştirildi." : "Kod aktifleştirildi.");
+        toast.success(active ? t("Kod pasifleştirildi.") : t("Kod aktifleştirildi."));
         router.refresh();
       }}
     >
       {busy ? <Loader2 className="animate-spin" /> : <Power />}
-      {active ? "Aktif" : "Pasif"}
+      {active ? t("Aktif") : t("Pasif")}
     </Button>
   );
 }
@@ -143,6 +146,7 @@ export function PremiumToggle({
   premium: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   return (
@@ -156,10 +160,10 @@ export function PremiumToggle({
         const res = await adminSetPremium(userId, !premium);
         setBusy(false);
         if (!res.ok) {
-          toast.error(res.error ?? "İşlem başarısız.");
+          toast.error(t(res.error ?? "İşlem başarısız."));
           return;
         }
-        toast.success(premium ? "Premium kapatıldı." : "Premium verildi.");
+        toast.success(premium ? t("Premium kapatıldı.") : t("Premium verildi."));
         router.refresh();
       }}
     >

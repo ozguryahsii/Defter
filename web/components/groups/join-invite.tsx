@@ -6,11 +6,13 @@ import Link from "next/link";
 import { Loader2, PartyPopper, XCircle } from "lucide-react";
 import { joinViaInvite } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 
 export function JoinInvite({ token }: { token: string }) {
   const router = useRouter();
+  const t = useT();
   const [state, setState] = useState<"loading" | "error">("loading");
-  const [message, setMessage] = useState("Gruba ekleniyorsun...");
+  const [message, setMessage] = useState("");
   const ran = useRef(false);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function JoinInvite({ token }: { token: string }) {
         return;
       }
       setState("error");
-      setMessage(res.error ?? "Davet linki geçersiz.");
+      setMessage(t(res.error ?? "Davet linki geçersiz."));
     })();
   }, [token, router]);
 
@@ -33,14 +35,14 @@ export function JoinInvite({ token }: { token: string }) {
         <>
           <Loader2 className="h-10 w-10 animate-spin text-brand" />
           <PartyPopper className="hidden" />
-          <p className="text-sm text-muted-foreground">{message}</p>
+          <p className="text-sm text-muted-foreground">{t("Gruba ekleniyorsun...")}</p>
         </>
       ) : (
         <>
           <XCircle className="h-10 w-10 text-destructive" />
           <p className="font-medium">{message}</p>
           <Button asChild variant="outline">
-            <Link href="/groups">Gruplarıma dön</Link>
+            <Link href="/groups">{t("Gruplarıma dön")}</Link>
           </Button>
         </>
       )}

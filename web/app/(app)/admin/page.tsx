@@ -12,6 +12,7 @@ import {
   CodeActiveToggle,
   PremiumToggle,
 } from "@/components/admin/admin-controls";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Yönetim" };
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function AdminPage({
   // Admin kimliği .env'deki ADMIN_USERNAME ile belirlenir; başkası giremez.
   const session = await requireAdmin();
   if (!session) redirect("/dashboard");
+  const t = getT();
 
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
@@ -72,20 +74,20 @@ export default async function AdminPage({
   });
 
   const stats = [
-    { label: "Toplam üye", value: totalUsers, icon: Users },
-    { label: "Premium üye", value: premiumUsers, icon: Crown },
-    { label: "Bugün kayıt", value: signupsToday, icon: ShieldCheck },
-    { label: "Son 7 gün", value: signupsWeek, icon: Ticket },
+    { label: t("Toplam üye"), value: totalUsers, icon: Users },
+    { label: t("Premium üye"), value: premiumUsers, icon: Crown },
+    { label: t("Bugün kayıt"), value: signupsToday, icon: ShieldCheck },
+    { label: t("Son 7 gün"), value: signupsWeek, icon: Ticket },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-          <ShieldCheck className="h-6 w-6 text-brand" /> Yönetim Paneli
+          <ShieldCheck className="h-6 w-6 text-brand" /> {t("Yönetim Paneli")}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          İndirim kodları, üyeler ve premium yönetimi
+          {t("İndirim kodları, üyeler ve premium yönetimi")}
         </p>
       </div>
 
@@ -108,19 +110,19 @@ export default async function AdminPage({
 
       {/* Kod oluşturma */}
       <SectionCard
-        title="Yeni İndirim Kodu"
-        description="Influencer kampanyaları için kod tanımla"
+        title={t("Yeni İndirim Kodu")}
+        description={t("Influencer kampanyaları için kod tanımla")}
       >
         <CodeCreateForm />
       </SectionCard>
 
       {/* Kod listesi + kimler geldi */}
       <SectionCard
-        title="İndirim Kodları"
-        description="Kod bazında kullanım ve gelen üyeler"
+        title={t("İndirim Kodları")}
+        description={t("Kod bazında kullanım ve gelen üyeler")}
       >
         {codes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Henüz kod yok.</p>
+          <p className="text-sm text-muted-foreground">{t("Henüz kod yok.")}</p>
         ) : (
           <ul className="space-y-4">
             {codes.map((c) => (
@@ -142,11 +144,11 @@ export default async function AdminPage({
                   )}
                   {c.expiresAt && (
                     <span className="text-xs text-muted-foreground">
-                      son: {formatDate(c.expiresAt)}
+                      {t("son:")} {formatDate(c.expiresAt)}
                     </span>
                   )}
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {c.redemptions.length} kullanım
+                    {t("{n} kullanım", { n: c.redemptions.length })}
                   </span>
                   <CodeActiveToggle codeId={c.id} active={c.active} />
                 </div>
@@ -178,8 +180,8 @@ export default async function AdminPage({
 
       {/* Üyeler */}
       <SectionCard
-        title="Üyeler"
-        description="Ara ve premium durumunu elle yönet (ödeme entegrasyonuna kadar)"
+        title={t("Üyeler")}
+        description={t("Ara ve premium durumunu elle yönet (ödeme entegrasyonuna kadar)")}
       >
         <form method="GET" className="mb-3 flex items-center gap-2">
           <div className="relative flex-1">
@@ -187,7 +189,7 @@ export default async function AdminPage({
             <Input
               name="q"
               defaultValue={q}
-              placeholder="Kullanıcı adı, ad veya e-posta ara…"
+              placeholder={t("Kullanıcı adı, ad veya e-posta ara…")}
               className="pl-9"
             />
           </div>
@@ -203,8 +205,8 @@ export default async function AdminPage({
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  kayıt: {formatDate(u.createdAt)}
-                  {u.premiumSource ? ` · kaynak: ${u.premiumSource}` : ""}
+                  {t("kayıt:")} {formatDate(u.createdAt)}
+                  {u.premiumSource ? ` · ${t("kaynak:")} ${u.premiumSource}` : ""}
                 </p>
               </div>
               <PremiumToggle userId={u.id} premium={u.premium} />
@@ -212,7 +214,7 @@ export default async function AdminPage({
           ))}
           {users.length === 0 && (
             <li className="py-3 text-sm text-muted-foreground">
-              Sonuç bulunamadı.
+              {t("Sonuç bulunamadı.")}
             </li>
           )}
         </ul>

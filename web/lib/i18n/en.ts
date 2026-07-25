@@ -320,4 +320,129 @@ export const EN: Record<string, string> = {
   "Grup adını değiştir": "Rename group",
   "Yeni ad tüm üyeler için görünür ve üyeler bilgilendirilir.":
     "The new name is visible to all members and they get notified.",
+
+  // --- Profil ---
+  "görünen adını ve ödeme bilgilerini yönet":
+    "manage your display name and payment details",
+  "Profil Fotoğrafı": "Profile Photo",
+  "Fotoğrafın grup arkadaşlarına her yerde görünür":
+    "Your photo is visible to your group mates everywhere",
+  "Fotoğraf Yükle": "Upload Photo",
+  Kaldır: "Remove",
+  "Fotoğraf yüklenemedi.": "Couldn't upload the photo.",
+  "Profil fotoğrafın güncellendi.": "Profile photo updated.",
+  "Fotoğraf kaldırıldı.": "Photo removed.",
+  "Hesap & Ödeme Bilgileri": "Account & Payment Details",
+  "IBAN eklersen borç ödemelerinde QR ile kolayca ödeme alırsın":
+    "Add an IBAN to receive debt payments easily via QR",
+  "Profil güncellendi.": "Profile updated.",
+  "Grup arkadaşların sana borçlarını öderken bu IBAN'ı ve QR kodunu görür.":
+    "Group mates see this IBAN and QR code when paying you back.",
+  "IBAN Sahibinin Adı Soyadı": "IBAN Holder's Full Name",
+  "Ad Soyad": "Full Name",
+  "Parola Değiştir": "Change Password",
+  "Hesap güvenliğin için güçlü bir parola kullan":
+    "Use a strong password to keep your account safe",
+  "Mevcut parola": "Current password",
+  "Yeni parola": "New password",
+  "Yeni parola (tekrar)": "New password (again)",
+  "Parolayı değiştir": "Change password",
+  "Parolan güncellendi.": "Password updated.",
+  "Tehlikeli bölge": "Danger zone",
+  "Hesabını silersen kişisel bilgilerin (kullanıcı adı, ad, IBAN) kalıcı olarak kaldırılır ve bir daha giriş yapamazsın. Yalnızca sana ait gruplar tamamen silinir; ortak gruplardaki harcama kayıtları, diğer üyelerin hesabı bozulmasın diye 'Silinen Kullanıcı' adıyla anonim kalır.":
+    "Deleting your account permanently removes your personal details (username, name, IBAN) and you won't be able to sign in again. Only groups you own are fully deleted; expense records in shared groups stay anonymised as 'Deleted User' so other members' balances remain intact.",
+  "Hesabımı sil": "Delete my account",
+  "Hesabını silmek üzeresin": "You're about to delete your account",
+  "Bu işlem geri alınamaz. Onaylamak için parolanı gir.":
+    "This cannot be undone. Enter your password to confirm.",
+  "Hesabın silindi. Güle güle 👋": "Your account has been deleted. Goodbye 👋",
+
+  // --- Premium ---
+  "Sınırsız grup ve harcama ile tatil hesaplarını özgürce tut.":
+    "Track your trip finances freely with unlimited groups and expenses.",
+  "Premium üyesin 🎉": "You're a Premium member 🎉",
+  "Yıllık plan aktif": "Yearly plan active",
+  "Aylık plan aktif": "Monthly plan active",
+  Yıllık: "Yearly",
+  "/ay": "/mo",
+  "/yıl": "/yr",
+  "%44 avantajlı": "Save 44%",
+  "Sınırsız grup oluşturma": "Unlimited groups",
+  "Gruplarda sınırsız harcama": "Unlimited expenses in groups",
+  "Gelecek premium özelliklerine erken erişim":
+    "Early access to upcoming premium features",
+  "İndirim kodun var mı?": "Have a discount code?",
+  "Influencer kodunu gir, indirimli fiyatı gör":
+    "Enter an influencer code to see discounted prices",
+  Uygula: "Apply",
+  "Kod doğrulanamadı.": "Couldn't validate the code.",
+  "Kod uygulandı: %{p} indirim!": "Code applied: {p}% off!",
+  "{code} uygulandı — %{p} indirim": "{code} applied — {p}% off",
+  "Premium'da neler var?": "What's in Premium?",
+  "Satın alma çok yakında": "Purchasing coming soon",
+  "Premium üyelik satın alımı SOBSO mobil uygulaması üzerinden (App Store / Google Play) yapılacak. İndirim kodunu şimdiden işleyebilirsin; satın alma açıldığında kodun otomatik uygulanır.":
+    "Premium subscriptions will be purchased through the SOBSO mobile app (App Store / Google Play). You can register your discount code now; it applies automatically once purchasing opens.",
+  "Geçersiz kod biçimi.": "Invalid code format.",
+  "Kod bulunamadı veya artık geçerli değil.": "Code not found or no longer valid.",
+  "Bu kodun süresi dolmuş.": "This code has expired.",
+  "Ücretsiz sürümde yalnızca 1 grup kurabilirsin. Sınırsız grup için sağ üst menüden Premium'a göz at.":
+    "The free plan allows only 1 group. Check out Premium from the top-right menu for unlimited groups.",
+  "Ücretsiz sürümde bir grupta en fazla 3 harcama olabilir. Sınırsız harcama için grup kurucusunun Premium'a geçmesi gerekir (sağ üst menü → Premium).":
+    "The free plan allows at most 3 expenses per group. The group owner needs Premium for unlimited expenses (top-right menu → Premium).",
+
+  // --- Yönetim paneli ---
+  "Yönetim Paneli": "Admin Panel",
+  "İndirim kodları, üyeler ve premium yönetimi":
+    "Discount codes, members and premium management",
+  "Toplam üye": "Total members",
+  "Premium üye": "Premium members",
+  "Bugün kayıt": "Sign-ups today",
+  "Son 7 gün": "Last 7 days",
+  "Yeni İndirim Kodu": "New Discount Code",
+  "Influencer kampanyaları için kod tanımla":
+    "Define codes for influencer campaigns",
+  Kod: "Code",
+  "İndirim (%)": "Discount (%)",
+  "Influencer (opsiyonel)": "Influencer (optional)",
+  "Örn. Özge": "e.g. Ozge",
+  "Son kullanma (opsiyonel)": "Expiry (optional)",
+  "Kod Oluştur": "Create Code",
+  "Kod oluşturulamadı.": "Couldn't create the code.",
+  "{code} oluşturuldu.": "{code} created.",
+  "İndirim Kodları": "Discount Codes",
+  "Kod bazında kullanım ve gelen üyeler": "Usage and referred members per code",
+  "Henüz kod yok.": "No codes yet.",
+  "son:": "expires:",
+  "{n} kullanım": "{n} uses",
+  "Kod pasifleştirildi.": "Code deactivated.",
+  "Kod aktifleştirildi.": "Code activated.",
+  Aktif: "Active",
+  Pasif: "Inactive",
+  "Ara ve premium durumunu elle yönet (ödeme entegrasyonuna kadar)":
+    "Search and manage premium manually (until billing integration)",
+  "Kullanıcı adı, ad veya e-posta ara…": "Search username, name or e-mail…",
+  "kayıt:": "joined:",
+  "kaynak:": "source:",
+  "Sonuç bulunamadı.": "No results.",
+  "Premium kapatıldı.": "Premium disabled.",
+  "Premium verildi.": "Premium granted.",
+  "Yetkin yok.": "You're not authorised.",
+  "Kod 3-20 harf/rakam olmalı (örn. KODUGIRINIZ).":
+    "Code must be 3-20 letters/digits (e.g. YOURCODE).",
+  "İndirim %1 ile %90 arasında olmalı.": "Discount must be between 1% and 90%.",
+  "Bu kod zaten var.": "This code already exists.",
+
+  // --- Rapor / katılım / diğer ---
+  "Gruba dön": "Back to group",
+  "Tatil / Arkadaş Grubu": "Trip / Friends Group",
+  "{date} tarihli rapor": "report dated {date}",
+  "Bu Ay": "This Month",
+  "Harcama Sayısı": "Expense Count",
+  "Ödeşme Planı": "Settlement Plan",
+  "Bekleyen borç yok.": "No outstanding debts.",
+  Ödenen: "Paid",
+  "Yazdır / PDF": "Print / PDF",
+  "Gruba ekleniyorsun...": "Joining the group...",
+  "Davet linki geçersiz.": "This invite link is invalid.",
+  "Gruplarıma dön": "Back to my groups",
 };

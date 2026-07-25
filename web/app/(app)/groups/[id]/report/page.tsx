@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { PrintButton } from "@/components/groups/print-button";
 import { CategoryDonut } from "@/components/charts/category-donut";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Rapor" };
 
@@ -16,6 +17,7 @@ export default async function GroupReportPage({
 }: {
   params: { id: string };
 }) {
+  const t = getT();
   const session = await auth();
   const userId = session!.user.id;
   const detail = await getGroupDetail(params.id, userId);
@@ -31,7 +33,7 @@ export default async function GroupReportPage({
   const categoryMap = new Map<string, number>();
   for (const e of group.expenses) {
     if (e.kind === "income") continue;
-    const cat = e.category?.trim() || "Diğer";
+    const cat = e.category?.trim() || t("Diğer");
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + e.amount);
   }
   const categoryBreakdown = [...categoryMap.entries()]
@@ -47,7 +49,7 @@ export default async function GroupReportPage({
           href={`/groups/${group.id}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> Gruba dön
+          <ArrowLeft className="h-4 w-4" /> {t("Gruba dön")}
         </Link>
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -63,31 +65,31 @@ export default async function GroupReportPage({
       <div className="border-b border-border/60 pb-4">
         <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {group.type === "Kisisel" ? "Kişisel Bütçe" : "Tatil / Arkadaş Grubu"}{" "}
-          · {group.members.length} üye · {formatDate(new Date())} tarihli rapor
+          {group.type === "Kisisel" ? t("Kişisel Bütçe") : t("Tatil / Arkadaş Grubu")}{" "}
+          · {t("{n} üye", { n: group.members.length })} · {t("{date} tarihli rapor", { date: formatDate(new Date()) })}
         </p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Toplam Harcama" value={formatCurrency(total, cur)} />
-        <Stat label="Bu Ay" value={formatCurrency(monthSpend, cur)} />
+        <Stat label={t("Toplam Harcama")} value={formatCurrency(total, cur)} />
+        <Stat label={t("Bu Ay")} value={formatCurrency(monthSpend, cur)} />
         <Stat
-          label="Bütçe"
+          label={t("Bütçe")}
           value={budget != null ? formatCurrency(budget, cur) : "—"}
         />
-        <Stat label="Harcama Sayısı" value={String(group.expenses.length)} />
+        <Stat label={t("Harcama Sayısı")} value={String(group.expenses.length)} />
       </div>
 
       {/* Category breakdown */}
       {categoryBreakdown.length > 0 && (
-        <Section title="Kategori Dağılımı">
+        <Section title={t("Kategori Dağılımı")}>
           <CategoryDonut data={categoryBreakdown} currency={cur} />
         </Section>
       )}
 
       {/* Balances */}
-      <Section title="Net Bakiyeler">
+      <Section title={t("Net Bakiyeler")}>
         <table className="w-full text-sm">
           <tbody>
             {settlement.balances.map((b) => (
@@ -111,9 +113,9 @@ export default async function GroupReportPage({
       </Section>
 
       {/* Outstanding settlement */}
-      <Section title="Ödeşme Planı">
+      <Section title={t("Ödeşme Planı")}>
         {settlement.transfers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Bekleyen borç yok.</p>
+          <p className="text-sm text-muted-foreground">{t("Bekleyen borç yok.")}</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {settlement.transfers.map((t, i) => (
@@ -132,7 +134,7 @@ export default async function GroupReportPage({
 
       {/* Paid */}
       {settled.length > 0 && (
-        <Section title="Ödenen">
+        <Section title={t("Ödenen")}>
           <ul className="space-y-1 text-sm">
             {settled.map((s) => (
               <li key={s.id} className="flex justify-between border-b border-border/40 py-1.5">
@@ -149,15 +151,15 @@ export default async function GroupReportPage({
       )}
 
       {/* Expenses */}
-      <Section title="Harcamalar">
+      <Section title={t("Harcamalar")}>
         <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
-              <th className="py-1.5">Tarih</th>
-              <th className="py-1.5">Açıklama</th>
-              <th className="py-1.5">Ödeyen</th>
-              <th className="py-1.5 text-right">Tutar</th>
+              <th className="py-1.5">{t("Tarih")}</th>
+              <th className="py-1.5">{t("Açıklama")}</th>
+              <th className="py-1.5">{t("Ödeyen")}</th>
+              <th className="py-1.5 text-right">{t("Tutar")}</th>
             </tr>
           </thead>
           <tbody>

@@ -7,6 +7,7 @@ import { Camera, Loader2, Trash2 } from "lucide-react";
 import { updateAvatar, removeAvatar } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
 
 export function AvatarForm({
   userId,
@@ -18,6 +19,7 @@ export function AvatarForm({
   hasAvatar: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   // Yükleme sonrası tarayıcı önbelleğini kırmak için avatar'ı yeniden çiz.
@@ -30,10 +32,10 @@ export function AvatarForm({
     const res = await updateAvatar(fd);
     setBusy(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Fotoğraf yüklenemedi.");
+      toast.error(t(res.error ?? "Fotoğraf yüklenemedi."));
       return;
     }
-    toast.success("Profil fotoğrafın güncellendi.");
+    toast.success(t("Profil fotoğrafın güncellendi."));
     setBump((b) => b + 1);
     router.refresh();
   }
@@ -43,10 +45,10 @@ export function AvatarForm({
     const res = await removeAvatar();
     setBusy(false);
     if (!res.ok) {
-      toast.error(res.error ?? "İşlem başarısız.");
+      toast.error(t(res.error ?? "İşlem başarısız."));
       return;
     }
-    toast.success("Fotoğraf kaldırıldı.");
+    toast.success(t("Fotoğraf kaldırıldı."));
     setBump((b) => b + 1);
     router.refresh();
   }
@@ -79,7 +81,7 @@ export function AvatarForm({
           onClick={() => inputRef.current?.click()}
         >
           {busy ? <Loader2 className="animate-spin" /> : <Camera />}
-          Fotoğraf Yükle
+          {t("Fotoğraf Yükle")}
         </Button>
         {hasAvatar && (
           <Button
@@ -89,7 +91,7 @@ export function AvatarForm({
             onClick={onRemove}
             className="text-muted-foreground hover:text-destructive"
           >
-            <Trash2 /> Kaldır
+            <Trash2 /> {t("Kaldır")}
           </Button>
         )}
       </div>
