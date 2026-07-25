@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * user has no photo — the Avatar component then falls back to initials.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { userId: string } },
 ) {
   const session = await auth();
@@ -21,7 +21,20 @@ export async function GET(
     where: { id: params.userId },
     select: { avatarPath: true },
   });
-  if (!user?.avatarPath) return new NextResponse("Not found", { status: 404 });
+  if (!user?.avatarPath)
+    return new NextResponse("Not found", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
+
+  // no-cache + ETag: tarayıcı her seferinde sorar; foto değişmediyse 304
+  // döner (hızlı), değiştiyse anında yenisini alır.
+  const etag = `"${user.avatarPath}"`;
+  if (req.headers.get("if-none-match") === etag)
+    return new NextResponse(null, {
+      status: 304,
+      headers: { ETag: etag, "Cache-Control": "private, no-cache" },
+    });
 
   const file = await readReceipt(user.avatarPath);
   if (!file) return new NextResponse("Not found", { status: 404 });
@@ -29,8 +42,8 @@ export async function GET(
   return new NextResponse(new Uint8Array(file.data), {
     headers: {
       "Content-Type": file.contentType,
-      // Kısa cache: foto değişince en geç 2 dk içinde her yerde tazelenir.
-      "Cache-Control": "private, max-age=120",
+      "Cache-Control": "private, no-cache",
+      ETag: etag,
     },
   });
 }

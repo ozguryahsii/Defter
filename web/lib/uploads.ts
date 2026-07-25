@@ -56,14 +56,21 @@ export async function saveAvatar(
 
   const dir = uploadDir();
   await fs.mkdir(dir, { recursive: true });
-  const filename = `avatar_${userId}.${ext}`;
+  // Her yüklemede benzersiz ad: URL değişir, tarayıcı önbelleği eski
+  // fotoğrafı gösteremez.
+  const filename = `avatar_${userId}_${Date.now()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await fs.writeFile(path.join(dir, filename), buffer);
 
-  // Farklı uzantılı eski fotoğraf kalmışsa temizle.
-  for (const other of ALLOWED.values()) {
-    if (other === ext) continue;
-    await fs.unlink(path.join(dir, `avatar_${userId}.${other}`)).catch(() => {});
+  // Bu kullanıcıya ait eski fotoğrafları temizle.
+  const prefix = `avatar_${userId}`;
+  for (const f of await fs.readdir(dir)) {
+    if (f === filename) continue;
+    if (
+      f.startsWith(prefix) &&
+      (f[prefix.length] === "." || f[prefix.length] === "_")
+    )
+      await fs.unlink(path.join(dir, f)).catch(() => {});
   }
   return { ok: true, filename };
 }
