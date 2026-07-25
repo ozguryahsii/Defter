@@ -115,8 +115,11 @@ export function ExpenseList({
           />
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-medium">{e.description}</p>
+            {/* Açıklama kısaltılmaz; kutunun sonuna kadar yazılır, gerekirse alt satıra sarar */}
+            <p className="break-words text-sm font-medium leading-snug">
+              {e.description}
+            </p>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
               {e.category && (
                 <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px]">
                   {e.category}
@@ -132,8 +135,6 @@ export function ExpenseList({
                   <Paperclip className="h-3 w-3" /> fiş
                 </a>
               )}
-            </div>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
               <span>
                 {e.kind === "income" ? "gelir" : `${e.payerName} ödedi`}
               </span>

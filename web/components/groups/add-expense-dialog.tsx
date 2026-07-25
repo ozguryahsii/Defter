@@ -89,25 +89,29 @@ export function AddExpenseDialog({
     expense?.exactAmounts ?? {},
   );
   const [entryCurrency, setEntryCurrency] = useState(currency);
-  const [fxRate, setFxRate] = useState("");
-  const [fxAuto, setFxAuto] = useState(false); // kur API'den mi geldi?
+  // Kur otomatik alınır ve değiştirilemez; null = henüz yükleniyor/alınamadı.
+  const [autoRate, setAutoRate] = useState<number | null>(null);
+  const [fxFailed, setFxFailed] = useState(false);
 
-  // Yabancı para seçilince güncel kuru otomatik getir (elle değiştirilebilir).
   useEffect(() => {
     if (entryCurrency === currency) {
-      setFxAuto(false);
+      setAutoRate(null);
+      setFxFailed(false);
       return;
     }
     let cancelled = false;
-    setFxAuto(false);
+    setAutoRate(null);
+    setFxFailed(false);
     fetch(`/api/fx?from=${entryCurrency}&to=${currency}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { rate?: number } | null) => {
-        if (cancelled || !data?.rate) return;
-        setFxRate(String(Math.round(data.rate * 10000) / 10000));
-        setFxAuto(true);
+        if (cancelled) return;
+        if (data?.rate) setAutoRate(data.rate);
+        else setFxFailed(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setFxFailed(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -115,7 +119,7 @@ export function AddExpenseDialog({
 
   const enteredAmount = parseFloat(amount) || 0;
   const isForeign = entryCurrency !== currency;
-  const rate = parseFloat(fxRate) || 0;
+  const rate = isForeign ? (autoRate ?? 0) : 1;
   // numericAmount is always in the GROUP currency (converted when foreign).
   const numericAmount = isForeign
     ? Math.round(enteredAmount * rate * 100) / 100
@@ -163,7 +167,6 @@ export function AddExpenseDialog({
       setExact({});
     }
     setEntryCurrency(currency);
-    setFxRate("");
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -311,36 +314,30 @@ export function AddExpenseDialog({
           </div>
 
           {isForeign && (
-            <div className="space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
-              <Label htmlFor="fx">
-                Kur: 1 {entryCurrency} kaç {currency}?
-              </Label>
-              <Input
-                id="fx"
-                type="number"
-                step="0.0001"
-                min="0"
-                inputMode="decimal"
-                value={fxRate}
-                onChange={(e) => {
-                  setFxRate(e.target.value);
-                  setFxAuto(false);
-                }}
-                placeholder="Örn. 35.20"
-                required
-              />
-              {fxAuto && (
+            <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+              {autoRate !== null ? (
                 <p className="text-xs text-muted-foreground">
-                  Güncel kur otomatik alındı; istersen elle değiştirebilirsin.
+                  Güncel kur: 1 {entryCurrency} ={" "}
+                  {(Math.round(autoRate * 10000) / 10000).toLocaleString("tr-TR")}{" "}
+                  {currency}
+                  {numericAmount > 0 && (
+                    <>
+                      {" · "}
+                      {enteredAmount} {entryCurrency} ≈{" "}
+                      <span className="font-medium text-foreground">
+                        {formatCurrency(numericAmount, currency)}
+                      </span>
+                    </>
+                  )}
                 </p>
-              )}
-              {numericAmount > 0 && (
+              ) : fxFailed ? (
+                <p className="text-xs text-destructive">
+                  Güncel kur şu anda alınamıyor. Lütfen biraz sonra tekrar dene
+                  veya tutarı {currency} olarak gir.
+                </p>
+              ) : (
                 <p className="text-xs text-muted-foreground">
-                  {enteredAmount} {entryCurrency} ≈{" "}
-                  <span className="font-medium text-foreground">
-                    {formatCurrency(numericAmount, currency)}
-                  </span>{" "}
-                  (grup para birimi)
+                  Güncel kur alınıyor…
                 </p>
               )}
             </div>
@@ -496,7 +493,11 @@ export function AddExpenseDialog({
             >
               Vazgeç
             </Button>
-            <Button type="submit" variant="brand" disabled={loading}>
+            <Button
+              type="submit"
+              variant="brand"
+              disabled={loading || (isForeign && autoRate === null)}
+            >
               {loading && <Loader2 className="animate-spin" />}
               {isEdit ? "Güncelle" : "Kaydet"}
             </Button>
