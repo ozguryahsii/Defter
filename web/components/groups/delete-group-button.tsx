@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useT } from "@/components/i18n-provider";
 
 export function DeleteGroupButton({
   groupId,
@@ -23,6 +24,7 @@ export function DeleteGroupButton({
   groupId: string;
   groupName: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,10 +34,10 @@ export function DeleteGroupButton({
     const res = await deleteGroup(groupId);
     setLoading(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Grup silinemedi.");
+      toast.error(t(res.error ?? "Grup silinemedi."));
       return;
     }
-    toast.success("Grup silindi.");
+    toast.success(t("Grup silindi."));
     router.push("/groups");
     router.refresh();
   }
@@ -47,20 +49,19 @@ export function DeleteGroupButton({
           variant="outline"
           className="w-full justify-center border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash2 className="h-4 w-4" /> Grubu Sil
+          <Trash2 className="h-4 w-4" /> {t("Grubu Sil")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>&quot;{groupName}&quot; silinsin mi?</DialogTitle>
+          <DialogTitle>{t("'{name}' silinsin mi?", { name: groupName })}</DialogTitle>
           <DialogDescription>
-            Tüm harcamalar, ödemeler ve geçmiş kalıcı olarak silinir. Bu işlem
-            geri alınamaz ve grubun tüm üyelerini etkiler.
+            {t("Tüm harcamalar, ödemeler ve geçmiş kalıcı olarak silinir. Bu işlem geri alınamaz ve grubun tüm üyelerini etkiler.")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-            Vazgeç
+            {t("Vazgeç")}
           </Button>
           <Button
             type="button"
@@ -69,7 +70,7 @@ export function DeleteGroupButton({
             disabled={loading}
           >
             {loading && <Loader2 className="animate-spin" />}
-            Kalıcı olarak sil
+            {t("Kalıcı olarak sil")}
           </Button>
         </DialogFooter>
       </DialogContent>

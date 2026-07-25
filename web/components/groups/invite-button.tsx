@@ -13,12 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useT } from "@/components/i18n-provider";
 
 /**
  * "Davet QR Oluştur": generates an invite link, shows it as a scannable QR
  * (camera → tap → join) with the raw link + copy button underneath.
  */
 export function InviteButton({ groupId }: { groupId: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
     const res = await createInvite(groupId);
     setLoading(false);
     if (!res.ok || !res.token) {
-      toast.error(res.error ?? "Davet oluşturulamadı.");
+      toast.error(t(res.error ?? "Davet oluşturulamadı."));
       return;
     }
     const link = `${window.location.origin}/join/${res.token}`;
@@ -49,9 +51,9 @@ export function InviteButton({ groupId }: { groupId: string }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success("Davet linki kopyalandı.");
+      toast.success(t("Davet linki kopyalandı."));
     } catch {
-      toast.error("Kopyalanamadı.");
+      toast.error(t("Kopyalanamadı."));
     }
   }
 
@@ -70,16 +72,15 @@ export function InviteButton({ groupId }: { groupId: string }) {
         ) : (
           <QrCode className="h-4 w-4" />
         )}
-        Davet QR Oluştur
+        {t("Davet QR Oluştur")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Gruba Davet</DialogTitle>
+            <DialogTitle>{t("Gruba Davet")}</DialogTitle>
             <DialogDescription>
-              Arkadaşın kamerasıyla okutup tıklayınca gruba katılır. Link 7 gün
-              geçerlidir.
+              {t("Arkadaşın kamerasıyla okutup tıklayınca gruba katılır. Link 7 gün geçerlidir.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -105,7 +106,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
                 type="button"
                 onClick={copy}
                 className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Linki kopyala"
+                aria-label={t("Linki kopyala")}
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-success" />

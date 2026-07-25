@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ActivityItem } from "@/lib/queries";
 import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
 
 const ICONS: Record<string, LucideIcon> = {
   "expense.add": Plus,
@@ -27,25 +28,26 @@ const ICONS: Record<string, LucideIcon> = {
   "recurring.run": Repeat,
 };
 
-function relativeTime(date: Date): string {
+function relativeTime(date: Date, t: (k: string, p?: Record<string, string | number>) => string): string {
   const diff = Date.now() - new Date(date).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "az önce";
-  if (min < 60) return `${min} dk önce`;
+  if (min < 1) return t("az önce");
+  if (min < 60) return t("{n} dk önce", { n: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} sa önce`;
+  if (h < 24) return t("{n} sa önce", { n: h });
   const d = Math.floor(h / 24);
-  if (d < 30) return `${d} gün önce`;
+  if (d < 30) return t("{n} gün önce", { n: d });
   return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" }).format(
     new Date(date),
   );
 }
 
 export function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  const t = useT();
   if (items.length === 0) {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground">
-        Henüz hareket yok.
+        {t("Henüz hareket yok.")}
       </p>
     );
   }
@@ -68,7 +70,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
                   className="h-4 w-4"
                   fallbackClassName="text-[8px]"
                 />
-                {a.actorName} · {relativeTime(a.createdAt)}
+                {a.actorName} · {relativeTime(a.createdAt, t)}
               </p>
             </div>
           </li>

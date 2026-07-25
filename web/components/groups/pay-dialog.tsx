@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { useT } from "@/components/i18n-provider";
 
 function formatIban(iban: string): string {
   return iban.replace(/(.{4})/g, "$1 ").trim();
@@ -33,6 +34,7 @@ export function PayDialog({
   amount: number;
   currency: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
 
@@ -62,9 +64,9 @@ export function PayDialog({
   async function copy(text: string, label: string) {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${label} kopyalandı.`);
+      toast.success(t("{x} kopyalandı.", { x: label }));
     } catch {
-      toast.error("Kopyalanamadı.");
+      toast.error(t("Kopyalanamadı."));
     }
   }
 
@@ -72,15 +74,14 @@ export function PayDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="h-8">
-          <Wallet className="h-4 w-4" /> Öde
+          <Wallet className="h-4 w-4" /> {t("Öde")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{creditorName}&apos;e öde</DialogTitle>
+          <DialogTitle>{t("{name}'e öde", { name: creditorName })}</DialogTitle>
           <DialogDescription>
-            {formatCurrency(amount, currency)} tutarını gönder. Ödemeni{" "}
-            {creditorName} aldığında &quot;Ödendi&quot; olarak onaylar.
+            {t("{amount} tutarını gönder. Ödemeni {name} aldığında 'Ödendi' olarak onaylar.", { amount: formatCurrency(amount, currency), name: creditorName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,9 +100,9 @@ export function PayDialog({
               </div>
             )}
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <QrCode className="h-3.5 w-3.5" /> Banka uygulamanın{" "}
-              <span className="font-medium">FAST / Karekod ile ödeme</span>{" "}
-              ekranından okut
+              <QrCode className="h-3.5 w-3.5" /> {t("Banka uygulamanın")}{" "}
+              <span className="font-medium">{t("FAST / Karekod ile ödeme")}</span>{" "}
+              {t("ekranından okut")}
             </div>
 
             <div className="space-y-2 rounded-xl border border-border/60 bg-secondary/30 p-3">
@@ -127,16 +128,16 @@ export function PayDialog({
                   size="sm"
                   variant="ghost"
                   className="h-7"
-                  onClick={() => copy(String(amount.toFixed(2)), "Tutar")}
+                  onClick={() => copy(String(amount.toFixed(2)), t("Tutar"))}
                 >
-                  <Copy className="h-3.5 w-3.5" /> Tutarı kopyala
+                  <Copy className="h-3.5 w-3.5" /> {t("Tutarı kopyala")}
                 </Button>
               </div>
             </div>
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-            {creditorName} henüz IBAN eklemedi. Profilinden ekleyebilir.
+            {t("{name} henüz IBAN eklemedi. Profilinden ekleyebilir.", { name: creditorName })}
           </div>
         )}
       </DialogContent>

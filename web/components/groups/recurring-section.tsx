@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { RecurringItem } from "@/lib/queries";
+import { useT } from "@/components/i18n-provider";
 
 type Member = { userId: string; name: string };
 
@@ -33,6 +34,7 @@ export function RecurringSection({
   members: Member[];
   currentUserId: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,10 +61,10 @@ export function RecurringSection({
     });
     setLoading(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Eklenemedi.");
+      toast.error(t(res.error ?? "Eklenemedi."));
       return;
     }
-    toast.success("Tekrarlayan harcama eklendi.");
+    toast.success(t("Tekrarlayan harcama eklendi."));
     setDescription("");
     setAmount("");
     setOpen(false);
@@ -70,15 +72,15 @@ export function RecurringSection({
   }
 
   async function remove(id: string) {
-    if (!window.confirm("Bu tekrarlayan harcamayı silmek istiyor musun?")) return;
+    if (!window.confirm(t("Bu tekrarlayan harcamayı silmek istiyor musun?"))) return;
     setBusy(id);
     const res = await deleteRecurring(id);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "Silinemedi.");
+      toast.error(t(res.error ?? "Silinemedi."));
       return;
     }
-    toast.success("Silindi.");
+    toast.success(t("Silindi."));
     router.refresh();
   }
 
@@ -86,8 +88,7 @@ export function RecurringSection({
     <div className="space-y-3">
       {items.length === 0 && !open && (
         <p className="text-sm text-muted-foreground">
-          Kira, abonelik gibi düzenli giderleri buraya ekle; vadesi geldikçe
-          otomatik harcamaya dönüşür (herkese eşit bölünür).
+          {t("Kira, abonelik gibi düzenli giderleri buraya ekle; vadesi geldikçe otomatik harcamaya dönüşür (herkese eşit bölünür).")}
         </p>
       )}
 
@@ -102,8 +103,8 @@ export function RecurringSection({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{r.description}</p>
                 <p className="text-xs text-muted-foreground">
-                  {r.interval === "weekly" ? "Haftalık" : "Aylık"} · {r.payerName}{" "}
-                  · sonraki: {formatDate(r.nextRunAt)}
+                  {r.interval === "weekly" ? t("Haftalık") : t("Aylık")} · {r.payerName}{" "}
+                  · {t("sonraki:")} {formatDate(r.nextRunAt)}
                 </p>
               </div>
               <span className="text-sm font-semibold tabular-nums">
@@ -113,7 +114,7 @@ export function RecurringSection({
                 onClick={() => remove(r.id)}
                 disabled={busy === r.id}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label="Sil"
+                aria-label={t("Sil")}
               >
                 {busy === r.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,18 +133,18 @@ export function RecurringSection({
           className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="rdesc">Açıklama</Label>
+            <Label htmlFor="rdesc">{t("Açıklama")}</Label>
             <Input
               id="rdesc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Örn. Ev kirası"
+              placeholder={t("Örn. Ev kirası")}
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <Label htmlFor="ramount">Tutar ({currency})</Label>
+              <Label htmlFor="ramount">{t("Tutar")} ({currency})</Label>
               <Input
                 id="ramount"
                 type="number"
@@ -155,7 +156,7 @@ export function RecurringSection({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Sıklık</Label>
+              <Label>{t("Sıklık")}</Label>
               <Select
                 value={interval}
                 onValueChange={(v) => setIntervalVal(v as "monthly" | "weekly")}
@@ -164,14 +165,14 @@ export function RecurringSection({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Aylık</SelectItem>
-                  <SelectItem value="weekly">Haftalık</SelectItem>
+                  <SelectItem value="monthly">{t("Aylık")}</SelectItem>
+                  <SelectItem value="weekly">{t("Haftalık")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="rstart">İlk tarih</Label>
+            <Label htmlFor="rstart">{t("İlk tarih")}</Label>
             <Input
               id="rstart"
               type="date"
@@ -182,7 +183,7 @@ export function RecurringSection({
           <div className="flex gap-2">
             <Button type="submit" variant="brand" size="sm" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Ekle
+              {t("Ekle")}
             </Button>
             <Button
               type="button"
@@ -190,7 +191,7 @@ export function RecurringSection({
               size="sm"
               onClick={() => setOpen(false)}
             >
-              <X className="h-4 w-4" /> Vazgeç
+              <X className="h-4 w-4" /> {t("Vazgeç")}
             </Button>
           </div>
         </form>
@@ -201,7 +202,7 @@ export function RecurringSection({
           className="w-full"
           onClick={() => setOpen(true)}
         >
-          <Plus className="h-4 w-4" /> Tekrarlayan harcama ekle
+          <Plus className="h-4 w-4" /> {t("Tekrarlayan harcama ekle")}
         </Button>
       )}
     </div>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { attachReceipt, deleteExpense } from "@/lib/actions";
 import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -57,19 +58,20 @@ export function ExpenseList({
   personal?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState<string | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function onDelete(id: string) {
-    if (!window.confirm("Bu harcamayı silmek istediğine emin misin?")) return;
+    if (!window.confirm(t("Bu harcamayı silmek istediğine emin misin?"))) return;
     setBusy(id);
     const res = await deleteExpense(id);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "Silinemedi.");
+      toast.error(t(res.error ?? "Silinemedi."));
       return;
     }
-    toast.success("Harcama silindi.");
+    toast.success(t("Harcama silindi."));
     router.refresh();
   }
 
@@ -80,10 +82,10 @@ export function ExpenseList({
     const res = await attachReceipt(id, fd);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "Fiş yüklenemedi.");
+      toast.error(t(res.error ?? "Fiş yüklenemedi."));
       return;
     }
-    toast.success("Fiş eklendi.");
+    toast.success(t("Fiş eklendi."));
     router.refresh();
   }
 
@@ -94,7 +96,7 @@ export function ExpenseList({
           <Receipt className="h-5 w-5 text-muted-foreground" />
         </span>
         <p className="text-sm text-muted-foreground">
-          Henüz harcama yok. İlk harcamayı ekle.
+          {t("Henüz harcama yok. İlk harcamayı ekle.")}
         </p>
       </div>
     );
@@ -134,18 +136,18 @@ export function ExpenseList({
                   rel="noreferrer"
                   className="inline-flex items-center gap-0.5 text-[10px] text-brand hover:underline"
                 >
-                  <Paperclip className="h-3 w-3" /> fiş
+                  <Paperclip className="h-3 w-3" /> {t("fiş")}
                 </a>
               )}
               <span>
-                {e.kind === "income" ? "gelir" : `${e.payerName} ödedi`}
+                {e.kind === "income" ? t("gelir") : t("{name} ödedi", { name: e.payerName })}
               </span>
               <span>·</span>
               <span>{formatDate(e.date)}</span>
               <span className="hidden items-center gap-1 sm:inline-flex">
                 <span>·</span>
                 <Users className="h-3 w-3" />
-                {e.shareCount} kişi
+                {t("{n} kişi", { n: e.shareCount })}
               </span>
               {e.original && (
                 <>
@@ -191,8 +193,8 @@ export function ExpenseList({
                   className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
                   onClick={() => fileInputs.current[e.id]?.click()}
                   disabled={busy === e.id}
-                  aria-label="Fiş ekle"
-                  title="Fiş fotoğrafı ekle"
+                  aria-label={t("Fiş ekle")}
+                  title={t("Fiş fotoğrafı ekle")}
                 >
                   {busy === e.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -214,8 +216,8 @@ export function ExpenseList({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                      aria-label="Düzenle"
-                      title="Düzenle"
+                      aria-label={t("Düzenle")}
+                      title={t("Düzenle")}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -231,7 +233,7 @@ export function ExpenseList({
                 className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                 onClick={() => onDelete(e.id)}
                 disabled={busy === e.id}
-                aria-label="Sil"
+                aria-label={t("Sil")}
               >
                 {busy === e.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

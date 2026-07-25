@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n-provider";
 import { Loader2, UserPlus } from "lucide-react";
 import { addMember } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function AddMemberForm({ groupId }: { groupId: string }) {
+  const t = useT();
   const router = useRouter();
   const [value, setValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,10 +22,10 @@ export function AddMemberForm({ groupId }: { groupId: string }) {
     const res = await addMember(groupId, value.trim());
     setLoading(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Üye eklenemedi.");
+      toast.error(t(res.error ?? "Üye eklenemedi."));
       return;
     }
-    toast.success("Davet gönderildi — onaylayınca gruba katılacak.");
+    toast.success(t("Davet gönderildi — onaylayınca gruba katılacak."));
     setValue("");
     router.refresh();
   }
@@ -33,8 +35,8 @@ export function AddMemberForm({ groupId }: { groupId: string }) {
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="kullanıcı adı"
-        aria-label="Kullanıcı adı"
+        placeholder={t("kullanıcı adı")}
+        aria-label={t("Kullanıcı adı")}
       />
       <Button type="submit" variant="secondary" size="icon" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" /> : <UserPlus />}

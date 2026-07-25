@@ -20,6 +20,7 @@ import type { Transfer } from "@/lib/settlement";
 import type { SettledItem } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { PayDialog } from "@/components/groups/pay-dialog";
+import { useT } from "@/components/i18n-provider";
 
 export type PayInfo = Record<
   string,
@@ -45,6 +46,7 @@ export function GroupSettlement({
   readOnly?: boolean;
 }) {
   const router = useRouter();
+  const tl = useT();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function onSettle(t: Transfer) {
@@ -53,10 +55,10 @@ export function GroupSettlement({
     const res = await settleTransfer(groupId, t.fromUserId, t.toUserId);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "İşlem başarısız.");
+      toast.error(tl(res.error ?? "İşlem başarısız."));
       return;
     }
-    toast.success(`${t.fromUserName} → sen: ödeme alındı olarak işaretlendi.`);
+    toast.success(tl("{name} → sen: ödeme alındı olarak işaretlendi.", { name: t.fromUserName }));
     router.refresh();
   }
 
@@ -66,10 +68,10 @@ export function GroupSettlement({
     const res = await remindTransfer(groupId, t.fromUserId);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "Hatırlatma gönderilemedi.");
+      toast.error(tl(res.error ?? "Hatırlatma gönderilemedi."));
       return;
     }
-    toast.success(`${t.fromUserName} kullanıcısına hatırlatma gönderildi.`);
+    toast.success(tl("{name} kullanıcısına hatırlatma gönderildi.", { name: t.fromUserName }));
   }
 
   async function onUndo(s: SettledItem) {
@@ -77,10 +79,10 @@ export function GroupSettlement({
     const res = await unsettleTransfer(s.id);
     setBusy(null);
     if (!res.ok) {
-      toast.error(res.error ?? "Geri alınamadı.");
+      toast.error(tl(res.error ?? "Geri alınamadı."));
       return;
     }
-    toast.success("Ödeme geri alındı, borç yeniden açıldı.");
+    toast.success(tl("Ödeme geri alındı, borç yeniden açıldı."));
     router.refresh();
   }
 
@@ -91,7 +93,7 @@ export function GroupSettlement({
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-success/40 bg-success/5 py-10 text-center">
           <CheckCircle2 className="h-8 w-8 text-success" />
           <p className="text-sm font-medium text-success">
-            Herkes ödeşmiş — bekleyen borç yok.
+            {tl("Herkes ödeşmiş — bekleyen borç yok.")}
           </p>
         </div>
       ) : (
@@ -140,14 +142,14 @@ export function GroupSettlement({
                     onClick={() => onRemind(t)}
                     disabled={busy === `remind:${t.fromUserId}->${t.toUserId}`}
                     className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border/60 px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground disabled:opacity-50"
-                    title="Borçluya bildirim gönder (günde 1 kez)"
+                    title={tl("Borçluya bildirim gönder (günde 1 kez)")}
                   >
                     {busy === `remind:${t.fromUserId}->${t.toUserId}` ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <BellRing className="h-3.5 w-3.5" />
                     )}
-                    Hatırlat
+                    {tl("Hatırlat")}
                   </button>
                 ) : (
                   <span className="ml-auto" />
@@ -171,7 +173,7 @@ export function GroupSettlement({
                     ) : (
                       <Check className="h-4 w-4" />
                     )}
-                    Ödeme Onay
+                    {tl("Ödeme Onay")}
                   </Button>
                 ) : isDebtor ? (
                   <PayDialog
@@ -184,7 +186,7 @@ export function GroupSettlement({
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Lock className="h-3 w-3" />
-                    sadece {t.toUserName}
+                    {tl("sadece")} {t.toUserName}
                   </span>
                 )}
               </li>
@@ -199,7 +201,7 @@ export function GroupSettlement({
           <div className="mb-2.5 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-success" />
             <h4 className="text-sm font-medium text-muted-foreground">
-              Ödenenler ({settled.length})
+              {tl("Ödenenler")} ({settled.length})
             </h4>
           </div>
           <ul className="space-y-2">
@@ -220,7 +222,7 @@ export function GroupSettlement({
                     {formatCurrency(s.amount, currency)}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
-                    <Check className="h-3 w-3" /> ödendi
+                    <Check className="h-3 w-3" /> {tl("ödendi")}
                   </span>
                   <span className="hidden text-[11px] text-muted-foreground sm:inline">
                     {formatDate(s.createdAt)}
@@ -237,7 +239,7 @@ export function GroupSettlement({
                       ) : (
                         <Undo2 className="h-3 w-3" />
                       )}
-                      geri al
+                      {tl("geri al")}
                     </button>
                   )}
                 </li>

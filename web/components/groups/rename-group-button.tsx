@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useT } from "@/components/i18n-provider";
 
 /** Owner-only: rename the group via a small pencil next to the title. */
 export function RenameGroupButton({
@@ -25,6 +26,7 @@ export function RenameGroupButton({
   groupId: string;
   currentName: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(currentName);
@@ -40,11 +42,11 @@ export function RenameGroupButton({
     const res = await renameGroup(groupId, name);
     setLoading(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Ad değiştirilemedi.");
+      toast.error(t(res.error ?? "Ad değiştirilemedi."));
       return;
     }
     setOpen(false);
-    toast.success("Grup adı güncellendi.");
+    toast.success(t("Grup adı güncellendi."));
     router.refresh();
   }
 
@@ -53,7 +55,7 @@ export function RenameGroupButton({
       <DialogTrigger asChild>
         <button
           type="button"
-          aria-label="Grup adını değiştir"
+          aria-label={t("Grup adını değiştir")}
           className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <Pencil className="h-4 w-4" />
@@ -61,9 +63,9 @@ export function RenameGroupButton({
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Grup adını değiştir</DialogTitle>
+          <DialogTitle>{t("Grup adını değiştir")}</DialogTitle>
           <DialogDescription>
-            Yeni ad tüm üyeler için görünür ve üyeler bilgilendirilir.
+            {t("Yeni ad tüm üyeler için görünür ve üyeler bilgilendirilir.")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -78,7 +80,7 @@ export function RenameGroupButton({
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
             autoFocus
-            placeholder="Grup adı"
+            placeholder={t("Grup adı")}
           />
           <DialogFooter>
             <Button
@@ -86,14 +88,14 @@ export function RenameGroupButton({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Vazgeç
+              {t("Vazgeç")}
             </Button>
             <Button
               type="submit"
               disabled={loading || name.trim().length === 0}
             >
               {loading && <Loader2 className="animate-spin" />}
-              Kaydet
+              {t("Kaydet")}
             </Button>
           </DialogFooter>
         </form>

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 export function BudgetCard({
   groupId,
@@ -24,6 +25,7 @@ export function BudgetCard({
   budget: number | null;
   isOwner: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(budget ? String(budget) : "");
@@ -35,10 +37,10 @@ export function BudgetCard({
     const res = await setBudget(groupId, parsed);
     setLoading(false);
     if (!res.ok) {
-      toast.error(res.error ?? "Kaydedilemedi.");
+      toast.error(t(res.error ?? "Kaydedilemedi."));
       return;
     }
-    toast.success("Bütçe güncellendi.");
+    toast.success(t("Bütçe güncellendi."));
     setEditing(false);
     router.refresh();
   }
@@ -50,7 +52,7 @@ export function BudgetCard({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Target className="h-4 w-4" /> Bu ay
+          <Target className="h-4 w-4" /> {t("Bu ay")}
         </div>
         {isOwner && !editing && (
           <button
@@ -58,7 +60,7 @@ export function BudgetCard({
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             <Pencil className="mr-1 inline h-3 w-3" />
-            {budget ? "düzenle" : "bütçe koy"}
+            {budget ? t("düzenle") : t("bütçe koy")}
           </button>
         )}
       </div>
@@ -72,7 +74,7 @@ export function BudgetCard({
             inputMode="decimal"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder={`Aylık bütçe (${currency})`}
+            placeholder={`${t("Aylık bütçe")} (${currency})`}
             className="h-9"
           />
           <Button size="icon" className="h-9 w-9" onClick={save} disabled={loading}>
@@ -112,8 +114,8 @@ export function BudgetCard({
                 )}
               >
                 {over
-                  ? `Bütçe ${formatCurrency(monthSpend - budget, currency)} aşıldı`
-                  : `${formatCurrency(budget - monthSpend, currency)} kaldı`}
+                  ? t("Bütçe {x} aşıldı", { x: formatCurrency(monthSpend - budget, currency) })
+                  : t("{x} kaldı", { x: formatCurrency(budget - monthSpend, currency) })}
               </p>
             </>
           )}

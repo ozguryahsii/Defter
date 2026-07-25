@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 type Member = { userId: string; name: string };
 
@@ -66,6 +67,7 @@ export function AddExpenseDialog({
   mode?: "expense" | "income";
 }) {
   const router = useRouter();
+  const t = useT();
   const isEdit = !!expense;
   const isIncome = mode === "income";
   const simple = personal || isIncome;
@@ -209,15 +211,15 @@ export function AddExpenseDialog({
     setLoading(false);
 
     if (!res.ok) {
-      toast.error(res.error ?? "İşlem başarısız.");
+      toast.error(t(res.error ?? "İşlem başarısız."));
       return;
     }
     toast.success(
       isEdit
-        ? "Kayıt güncellendi."
+        ? t("Kayıt güncellendi.")
         : isIncome
-          ? "Gelir eklendi."
-          : "Harcama eklendi.",
+          ? t("Gelir eklendi.")
+          : t("Harcama eklendi."),
     );
     if (!isEdit) reset(); // clear the form so the next "add" starts fresh
     setOpen(false);
@@ -235,7 +237,7 @@ export function AddExpenseDialog({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button variant={isIncome ? "outline" : "brand"}>
-            <Plus /> {isIncome ? "Gelir Ekle" : "Harcama Ekle"}
+            <Plus /> {isIncome ? t("Gelir Ekle") : t("Harcama Ekle")}
           </Button>
         )}
       </DialogTrigger>
@@ -243,28 +245,28 @@ export function AddExpenseDialog({
         <DialogHeader>
           <DialogTitle>
             {isEdit
-              ? "Kaydı Düzenle"
+              ? t("Kaydı Düzenle")
               : isIncome
-                ? "Gelir Ekle"
-                : "Harcama Ekle"}
+                ? t("Gelir Ekle")
+                : t("Harcama Ekle")}
           </DialogTitle>
           <DialogDescription>
             {isIncome
-              ? "Bütçene giren parayı kaydet (maaş, ek gelir vb.)."
+              ? t("Bütçene giren parayı kaydet (maaş, ek gelir vb.).")
               : simple
-                ? "Tutarı gir; bütçe özeti anında güncellenir."
-                : "Tutarı gir, kimlerin dahil olduğunu seç. Borç tablosu anında güncellenir."}
+                ? t("Tutarı gir; bütçe özeti anında güncellenir.")
+                : t("Tutarı gir, kimlerin dahil olduğunu seç. Borç tablosu anında güncellenir.")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="desc">Açıklama</Label>
+            <Label htmlFor="desc">{t("Açıklama")}</Label>
             <Input
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={isIncome ? "Örn. Maaş" : "Örn. Akşam yemeği"}
+              placeholder={isIncome ? t("Örn. Maaş") : t("Örn. Akşam yemeği")}
               required
               autoFocus
             />
@@ -272,7 +274,7 @@ export function AddExpenseDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="amount">Tutar</Label>
+              <Label htmlFor="amount">{t("Tutar")}</Label>
               <div className="flex gap-2">
                 <Input
                   id="amount"
@@ -303,12 +305,12 @@ export function AddExpenseDialog({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cat">Kategori</Label>
+              <Label htmlFor="cat">{t("Kategori")}</Label>
               <Input
                 id="cat"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="Örn. Yemek"
+                placeholder={t("Örn. Yemek")}
               />
             </div>
           </div>
@@ -317,7 +319,7 @@ export function AddExpenseDialog({
             <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
               {autoRate !== null ? (
                 <p className="text-xs text-muted-foreground">
-                  Güncel kur: 1 {entryCurrency} ={" "}
+                  {t("Güncel kur:")} 1 {entryCurrency} ={" "}
                   {(Math.round(autoRate * 10000) / 10000).toLocaleString("tr-TR")}{" "}
                   {currency}
                   {numericAmount > 0 && (
@@ -332,12 +334,11 @@ export function AddExpenseDialog({
                 </p>
               ) : fxFailed ? (
                 <p className="text-xs text-destructive">
-                  Güncel kur şu anda alınamıyor. Lütfen biraz sonra tekrar dene
-                  veya tutarı {currency} olarak gir.
+                  {t("Güncel kur şu anda alınamıyor. Lütfen biraz sonra tekrar dene veya tutarı {cur} olarak gir.", { cur: currency })}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Güncel kur alınıyor…
+                  {t("Güncel kur alınıyor…")}
                 </p>
               )}
             </div>
@@ -346,7 +347,7 @@ export function AddExpenseDialog({
           <div className={cn("grid gap-3", !simple && "sm:grid-cols-2")}>
             {!simple && (
               <div className="space-y-2">
-                <Label>Ödeyen</Label>
+                <Label>{t("Ödeyen")}</Label>
                 <Select value={payerId} onValueChange={setPayerId}>
                   <SelectTrigger>
                     <SelectValue />
@@ -362,7 +363,7 @@ export function AddExpenseDialog({
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="date">Tarih</Label>
+              <Label htmlFor="date">{t("Tarih")}</Label>
               <Input
                 id="date"
                 type="date"
@@ -371,7 +372,7 @@ export function AddExpenseDialog({
               />
               {simple && !isIncome && (
                 <p className="text-xs text-muted-foreground">
-                  İleri tarih girersen, 2 gün ve 1 gün kala sana hatırlatırız.
+                  {t("İleri tarih girersen, 2 gün ve 1 gün kala sana hatırlatırız.")}
                 </p>
               )}
             </div>
@@ -380,21 +381,21 @@ export function AddExpenseDialog({
           {/* Split type toggle */}
           {!simple && (
             <div className="space-y-2">
-              <Label>Bölüşüm</Label>
+              <Label>{t("Bölüşüm")}</Label>
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-muted/40 p-1">
-                {(["Equal", "Exact"] as const).map((t) => (
+                {(["Equal", "Exact"] as const).map((st) => (
                   <button
-                    key={t}
+                    key={st}
                     type="button"
-                    onClick={() => setSplitType(t)}
+                    onClick={() => setSplitType(st)}
                     className={cn(
                       "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                      splitType === t
+                      splitType === st
                         ? "bg-background text-foreground shadow-soft"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {t === "Equal" ? "Eşit böl" : "Özel tutarlar"}
+                    {st === "Equal" ? t("Eşit böl") : t("Özel tutarlar")}
                   </button>
                 ))}
               </div>
@@ -404,10 +405,10 @@ export function AddExpenseDialog({
           {/* Participants */}
           <div className={cn("space-y-2", simple && "hidden")}>
             <div className="flex items-center justify-between">
-              <Label>Kimleri kapsıyor?</Label>
+              <Label>{t("Kimleri kapsıyor?")}</Label>
               {splitType === "Equal" && equalPreview !== null && (
                 <span className="text-xs text-muted-foreground">
-                  Kişi başı ~{formatCurrency(equalPreview, currency)}
+                  {t("Kişi başı")} ~{formatCurrency(equalPreview, currency)}
                 </span>
               )}
             </div>
@@ -433,7 +434,7 @@ export function AddExpenseDialog({
                           ? "border-brand bg-brand text-brand-foreground"
                           : "border-border",
                       )}
-                      aria-label={`${m.name} seç`}
+                      aria-label={m.name}
                     >
                       {checked && <Check className="h-3.5 w-3.5" />}
                     </button>
@@ -476,8 +477,8 @@ export function AddExpenseDialog({
                 )}
               >
                 {Math.abs(remainder) < 0.005
-                  ? "Toplam tutarla eşleşiyor ✓"
-                  : `Kalan: ${formatCurrency(remainder, currency)}`}
+                  ? t("Toplam tutarla eşleşiyor ✓")
+                  : t("Kalan: {x}", { x: formatCurrency(remainder, currency) })}
               </p>
             )}
           </div>
@@ -491,7 +492,7 @@ export function AddExpenseDialog({
                 setOpen(false);
               }}
             >
-              Vazgeç
+              {t("Vazgeç")}
             </Button>
             <Button
               type="submit"
@@ -499,7 +500,7 @@ export function AddExpenseDialog({
               disabled={loading || (isForeign && autoRate === null)}
             >
               {loading && <Loader2 className="animate-spin" />}
-              {isEdit ? "Güncelle" : "Kaydet"}
+              {isEdit ? t("Güncelle") : t("Kaydet")}
             </Button>
           </DialogFooter>
         </form>
