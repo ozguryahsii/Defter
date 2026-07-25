@@ -44,7 +44,7 @@ npx cap open ios
 ```
 
 Xcode açılınca üstteki cihaz listesinden bir iPhone simülatörü seç ve ▶︎
-(Run) tuşuna bas. Uygulama açılır ve `http://localhost:3000` üzerinden
+(Run) tuşuna bas. Uygulama açılır ve `http://localhost:3333` üzerinden
 SOBSO yüklenir (simülatör, Mac'in localhost'unu görür).
 
 ## Gerçek iPhone'da çalıştırma
@@ -54,7 +54,7 @@ SOBSO yüklenir (simülatör, Mac'in localhost'unu görür).
 3. Sunucu URL'ini o IP ile senkronla:
    ```bash
    cd Defter/mobile
-   CAP_SERVER_URL=http://192.168.1.20:3000 npx cap sync ios
+   CAP_SERVER_URL=http://192.168.1.20:3333 npx cap sync ios
    ```
 4. `web` tarafını dış bağlantı kabul edecek şekilde başlat:
    ```bash
