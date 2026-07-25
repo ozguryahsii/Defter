@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/components/i18n-provider";
 
 export function RegisterForm() {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -27,7 +29,7 @@ export function RegisterForm() {
     if (!res.ok) {
       setLoading(false);
       if (res.fieldErrors) setFieldErrors(res.fieldErrors);
-      if (res.error) toast.error(res.error);
+      if (res.error) toast.error(t(res.error));
       return;
     }
 
@@ -40,11 +42,11 @@ export function RegisterForm() {
     setLoading(false);
 
     if (signInRes?.error) {
-      toast.success("Hesap oluşturuldu. Lütfen giriş yapın.");
+      toast.success(t("Hesap oluşturuldu. Lütfen giriş yapın."));
       router.push("/login");
       return;
     }
-    toast.success("Hesabın hazır!");
+    toast.success(t("Hesabın hazır!"));
     // Tam sayfa yönlendirme: mobilde client-side push oturum çerezinden
     // önce koşup boş sayfada bırakabiliyor.
     window.location.assign("/dashboard");
@@ -53,7 +55,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="username">Kullanıcı adı</Label>
+        <Label htmlFor="username">{t("Kullanıcı adı")}</Label>
         <Input
           id="username"
           name="username"
@@ -66,11 +68,11 @@ export function RegisterForm() {
           autoFocus
         />
         {fieldErrors.username && (
-          <p className="text-xs text-destructive">{fieldErrors.username}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.username)}</p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email">E-posta</Label>
+        <Label htmlFor="email">{t("E-posta")}</Label>
         <Input
           id="email"
           name="email"
@@ -80,36 +82,36 @@ export function RegisterForm() {
           required
         />
         {fieldErrors.email && (
-          <p className="text-xs text-destructive">{fieldErrors.email}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.email)}</p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="displayName">Görünen ad (değiştirilemez)</Label>
+        <Label htmlFor="displayName">{t("Görünen ad (değiştirilemez)")}</Label>
         <Input
           id="displayName"
           name="displayName"
           autoComplete="name"
-          placeholder="Adın Soyadın"
+          placeholder={t("Adın Soyadın")}
           required
         />
         {fieldErrors.displayName && (
-          <p className="text-xs text-destructive">{fieldErrors.displayName}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.displayName)}</p>
         )}
         <p className="text-xs text-muted-foreground">
-          Grup arkadaşların seni bu adla görür; kayıt sonrası değiştirilemez.
+          {t("Grup arkadaşların seni bu adla görür; kayıt sonrası değiştirilemez.")}
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Parola</Label>
+        <Label htmlFor="password">{t("Parola")}</Label>
         <PasswordInput
           id="password"
           name="password"
           autoComplete="new-password"
-          placeholder="En az 8 karakter"
+          placeholder={t("En az 8 karakter")}
           required
         />
         {fieldErrors.password && (
-          <p className="text-xs text-destructive">{fieldErrors.password}</p>
+          <p className="text-xs text-destructive">{t(fieldErrors.password)}</p>
         )}
       </div>
       <Button
@@ -119,25 +121,25 @@ export function RegisterForm() {
         disabled={loading}
       >
         {loading ? <Loader2 className="animate-spin" /> : <UserPlus />}
-        Kayıt ol
+        {t("Kayıt ol")}
       </Button>
 
       <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-        Kayıt olarak{" "}
+        {t("Kayıt olarak")}{" "}
         <Link href="/terms" className="underline hover:text-foreground">
-          Kullanım Şartları
+          {t("Kullanım Şartları")}
         </Link>
-        &apos;nı ve{" "}
+        {t("'nı ve")}{" "}
         <Link href="/privacy" className="underline hover:text-foreground">
-          Gizlilik Politikası
+          {t("Gizlilik Politikası")}
         </Link>
-        &apos;nı kabul etmiş olursun.
+        {t("'nı kabul etmiş olursun.")}
       </p>
 
       <p className="pt-2 text-center text-sm text-muted-foreground">
-        Zaten hesabın var mı?{" "}
+        {t("Zaten hesabın var mı?")}{" "}
         <Link href="/login" className="font-medium text-primary hover:underline">
-          Giriş yap
+          {t("Giriş yap")}
         </Link>
       </p>
     </form>

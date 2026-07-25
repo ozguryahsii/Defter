@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Logo } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
+import { LanguageToggle } from "./language-toggle";
 import { UserMenu } from "./user-menu";
 import { NotificationBell } from "./notification-bell";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ export function Topbar({
 
       <div className="ml-auto flex items-center gap-1.5">
         <NotificationBell />
+        <LanguageToggle />
         <ThemeToggle />
         <div className="mx-1 h-6 w-px bg-border" />
         <UserMenu

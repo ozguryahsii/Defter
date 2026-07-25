@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Wallet, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 const ITEMS = [
   { href: "/dashboard", label: "Genel Bakış", icon: LayoutDashboard },
@@ -18,12 +19,13 @@ const ITEMS = [
  */
 export function BottomNav() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/85 backdrop-blur-xl lg:hidden print:hidden"
       style={{ paddingBottom: "var(--safe-bottom)" }}
-      aria-label="Alt gezinme"
+      aria-label="Navigation"
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-4">
         {ITEMS.map((item) => {
@@ -49,7 +51,7 @@ export function BottomNav() {
               >
                 <Icon className="h-5 w-5" />
               </span>
-              {item.label}
+              {t(item.label)}
             </Link>
           );
         })}

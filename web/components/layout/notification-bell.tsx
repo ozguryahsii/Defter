@@ -15,6 +15,7 @@ import {
 import { respondJoinRequest } from "@/lib/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,18 +51,19 @@ function iconFor(type: string) {
   }
 }
 
-function relative(iso: string): string {
+function relative(iso: string, t: (k: string, p?: Record<string, string | number>) => string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "az önce";
-  if (min < 60) return `${min} dk`;
+  if (min < 1) return t("az önce");
+  if (min < 60) return t("{n} dk", { n: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} sa`;
-  return `${Math.floor(h / 24)} g`;
+  if (h < 24) return t("{n} sa", { n: h });
+  return t("{n} g", { n: Math.floor(h / 24) });
 }
 
 export function NotificationBell() {
   const router = useRouter();
+  const t = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -98,9 +100,9 @@ export function NotificationBell() {
     const res = await respondJoinRequest(requestId, accept);
     setRespondingId(null);
     if (!res.ok) {
-      toast.error(res.error ?? "İşlem başarısız.");
+      toast.error(t(res.error ?? "İşlem başarısız."));
     } else {
-      toast.success(accept ? "Gruba katıldın. 🎉" : "Davet reddedildi.");
+      toast.success(accept ? t("Gruba katıldın. 🎉") : t("Davet reddedildi."));
       if (accept && res.groupId) router.push(`/groups/${res.groupId}`);
       router.refresh();
     }
@@ -133,7 +135,7 @@ export function NotificationBell() {
           variant="ghost"
           size="icon"
           className="relative text-muted-foreground"
-          aria-label={`Bildirimler${unread ? ` (${unread} okunmamış)` : ""}`}
+          aria-label={t("Bildirimler")}
         >
           <Bell className="h-5 w-5" />
           {unread > 0 && (
@@ -145,12 +147,12 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="border-b border-border/60 px-4 py-2.5 text-sm font-semibold">
-          Bildirimler
+          {t("Bildirimler")}
         </div>
         <div className="max-h-96 overflow-y-auto">
           {items.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Henüz bildirim yok.
+              {t("Henüz bildirim yok.")}
             </p>
           ) : (
             <ul>
@@ -194,7 +196,7 @@ export function NotificationBell() {
                               ) : (
                                 <Check className="h-3 w-3" />
                               )}
-                              Onayla
+                              {t("Onayla")}
                             </Button>
                             <Button
                               size="sm"
@@ -206,13 +208,13 @@ export function NotificationBell() {
                                 onRespond(n, false);
                               }}
                             >
-                              <X className="h-3 w-3" /> Reddet
+                              <X className="h-3 w-3" /> {t("Reddet")}
                             </Button>
                           </span>
                         )}
                       </span>
                       <span className="shrink-0 text-[10px] text-muted-foreground">
-                        {relative(n.createdAt)}
+                        {relative(n.createdAt, t)}
                       </span>
                     </div>
                   </li>

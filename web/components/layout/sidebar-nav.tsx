@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { navItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n-provider";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav className="flex flex-col gap-1">
@@ -40,7 +42,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 active && "text-primary",
               )}
             />
-            <span className="relative z-10">{item.label}</span>
+            <span className="relative z-10">{t(item.label)}</span>
           </Link>
         );
       })}

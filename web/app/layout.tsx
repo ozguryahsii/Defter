@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { PwaRegister } from "@/components/pwa-register";
+import { getLocale } from "@/lib/i18n/server";
 
 const sans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,10 +38,15 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = getLocale();
   return (
-    <html lang="tr" className={`dark ${sans.variable}`} suppressHydrationWarning>
+    <html
+      lang={locale}
+      className={`dark ${sans.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen bg-background font-sans antialiased">
-        <Providers>{children}</Providers>
+        <Providers locale={locale}>{children}</Providers>
         <PwaRegister />
       </body>
     </html>

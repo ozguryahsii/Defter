@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
 
 export function UserMenu({
   userId,
@@ -26,6 +27,7 @@ export function UserMenu({
   avatarVersion?: string | null;
   isAdmin?: boolean;
 }) {
+  const t = useT();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none ring-ring transition focus-visible:ring-2">
@@ -46,18 +48,18 @@ export function UserMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile">
-            <UserRound /> Profil
+            <UserRound /> {t("Profil")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/premium">
-            <Crown /> Premium
+            <Crown /> {t("Premium")}
           </Link>
         </DropdownMenuItem>
         {isAdmin && (
           <DropdownMenuItem asChild>
             <Link href="/admin">
-              <ShieldCheck /> Yönetim
+              <ShieldCheck /> {t("Yönetim")}
             </Link>
           </DropdownMenuItem>
         )}
@@ -71,7 +73,7 @@ export function UserMenu({
           }}
           className="text-destructive focus:text-destructive [&_svg]:text-destructive"
         >
-          <LogOut /> Çıkış yap
+          <LogOut /> {t("Çıkış yap")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
