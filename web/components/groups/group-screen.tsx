@@ -458,7 +458,12 @@ export function GroupScreen({
                           className="h-8 w-8"
                           fallbackClassName="text-[10px]"
                         />
-                        <span className="flex-1 truncate text-sm">{name}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm">{name}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground/80">
+                            @{m.user.username}
+                          </span>
+                        </span>
                         {m.userId === group.createdById ? (
                           <Badge variant="secondary" className="text-[10px]">
                             {t("sahip")}
