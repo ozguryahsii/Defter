@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
+import { getT } from "@/lib/i18n/server";
 
 export default function LegalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = getT();
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8 flex justify-center">
@@ -16,13 +18,13 @@ export default function LegalLayout({
       </article>
       <footer className="mt-10 flex justify-center gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground">
         <Link href="/privacy" className="hover:text-foreground">
-          Gizlilik Politikası
+          {t("Gizlilik Politikası")}
         </Link>
         <Link href="/terms" className="hover:text-foreground">
-          Kullanım Şartları
+          {t("Kullanım Şartları")}
         </Link>
         <Link href="/login" className="hover:text-foreground">
-          Giriş
+          {t("Giriş")}
         </Link>
       </footer>
     </div>

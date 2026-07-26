@@ -460,6 +460,8 @@ export const EN: Record<string, string> = {
     "Choose QR image(s) — multiple allowed",
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
+  "Parolayı göster": "Show password",
+  "Parolayı gizle": "Hide password",
 
   // --- Sekme başlıkları / meta ---
   "SOBSO! — Ortak Harcama Paylaşımı": "SOBSO! — Shared Expense Splitting",
