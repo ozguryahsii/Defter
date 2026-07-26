@@ -49,7 +49,10 @@ model User {
 model DiscountCode {
   id         String    @id @default(cuid())
   code       String    @unique // stored uppercase
-  percent    Int // 1-90
+  kind       String    @default("discount") // "discount" | "trial"
+  percent    Int // discount: 1-90 (trial için 0)
+  trialDays  Int? // trial: kaç gün premium verir
+  maxUses    Int? // kontenjan (null => sınırsız)
   influencer String? // who promotes this code
   active     Boolean   @default(true)
   expiresAt  DateTime?

@@ -36,13 +36,18 @@ function discounted(price: number, percent: number): string {
 
 export function PremiumScreen({
   premium,
+  premiumUntil,
   plan,
   initialCode,
 }: {
   premium: boolean;
+  premiumUntil?: string | null;
   plan: string | null;
   initialCode: { code: string; percent: number } | null;
 }) {
+  const daysLeft = premiumUntil
+    ? Math.max(0, Math.ceil((new Date(premiumUntil).getTime() - Date.now()) / 86400000))
+    : null;
   const t = useT();
   const [codeInput, setCodeInput] = useState("");
   const [applied, setApplied] = useState(initialCode);
@@ -54,13 +59,18 @@ export function PremiumScreen({
     setBusy(true);
     const res = await applyDiscountCode(codeInput);
     setBusy(false);
-    if (!res.ok || !res.percent) {
+    if (!res.ok || (!res.percent && !res.trialDays)) {
       toast.error(t(res.error ?? "Kod doğrulanamadı."));
       return;
     }
-    setApplied({ code: codeInput.trim().toUpperCase(), percent: res.percent });
+    if (res.trialDays) {
+      toast.success(t("{n} günlük Premium başladı! 🎉", { n: res.trialDays }));
+      window.location.reload();
+      return;
+    }
+    setApplied({ code: codeInput.trim().toUpperCase(), percent: res.percent! });
     setCodeInput("");
-    toast.success(t("Kod uygulandı: %{p} indirim!", { p: res.percent }));
+    toast.success(t("Kod uygulandı: %{p} indirim!", { p: res.percent! }));
   }
 
   return (
@@ -78,7 +88,11 @@ export function PremiumScreen({
         <SectionCard
           title={t("Premium üyesin 🎉")}
           description={
-            plan === "yearly" ? t("Yıllık plan aktif") : t("Aylık plan aktif")
+            daysLeft != null
+              ? t("Deneme süresi — {n} gün kaldı", { n: daysLeft })
+              : plan === "yearly"
+                ? t("Yıllık plan aktif")
+                : t("Aylık plan aktif")
           }
         >
           <ul className="space-y-2">

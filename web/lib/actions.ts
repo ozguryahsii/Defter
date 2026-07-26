@@ -14,6 +14,7 @@ import { materializeRecurring } from "./recurring";
 import { isCurrencyCode } from "./currencies";
 import { requireAdmin } from "./admin";
 import { getT } from "./i18n/server";
+import { getEffectivePremium } from "./premium";
 
 // Sunucu mesajları istek anındaki dile göre çevrilir (varsayılan EN).
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -123,11 +124,7 @@ export async function createGroup(
   }
 
   // Free sürüm limiti: kullanıcı başına 1 grup (kişisel bütçe hariç).
-  const me = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { premium: true },
-  });
-  if (!me?.premium) {
+  if (!(await getEffectivePremium(session.user.id))) {
     const owned = await prisma.group.count({
       where: { createdById: session.user.id, type: { not: "Kisisel" } },
     });
@@ -440,11 +437,7 @@ export async function addExpense(input: {
   // Free sürüm limiti: kurucusu premium olmayan grupta en fazla 3 harcama
   // (kim eklerse eklesin). Kişisel bütçe sınırsızdır.
   if (group.type !== "Kisisel") {
-    const owner = await prisma.user.findUnique({
-      where: { id: group.createdById },
-      select: { premium: true },
-    });
-    if (!owner?.premium) {
+    if (!(await getEffectivePremium(group.createdById))) {
       const expenseCount = await prisma.expense.count({
         where: { groupId: group.id },
       });
@@ -1570,10 +1563,15 @@ export async function deleteRecurring(id: string): Promise<ActionState> {
 // Premium / discount codes
 // ---------------------------------------------------------------------------
 
-/** Kod geçerliyse yüzdeyi döner ve kullanıcıya "bu kodla geldi" kaydı düşer. */
+/**
+ * İndirim veya deneme kodu kullanır.
+ * Kurallar: premium'u aktif olan hiçbir kod kullanamaz; aynı kod aynı kişi
+ * tarafından bir kez kullanılabilir; kontenjan (maxUses) ve son kullanma
+ * tarihi denetlenir. Deneme kodu anında premium başlatır.
+ */
 export async function applyDiscountCode(
   rawCode: string,
-): Promise<ActionState & { percent?: number }> {
+): Promise<ActionState & { percent?: number; trialDays?: number }> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: t("Oturum bulunamadı.") };
 
@@ -1581,18 +1579,44 @@ export async function applyDiscountCode(
   if (!/^[A-Z0-9]{3,20}$/.test(code))
     return { ok: false, error: t("Geçersiz kod biçimi.") };
 
-  const dc = await prisma.discountCode.findUnique({ where: { code } });
+  const dc = await prisma.discountCode.findUnique({
+    where: { code },
+    include: { _count: { select: { redemptions: true } } },
+  });
   if (!dc || !dc.active)
     return { ok: false, error: t("Kod bulunamadı veya artık geçerli değil.") };
   if (dc.expiresAt && dc.expiresAt < new Date())
     return { ok: false, error: t("Bu kodun süresi dolmuş.") };
+  if (dc.maxUses != null && dc._count.redemptions >= dc.maxUses)
+    return { ok: false, error: t("Bu kodun kontenjanı dolmuş.") };
 
-  // Aynı kullanıcı aynı kodu bir kez kullanabilir; tekrar girerse sorun değil.
-  await prisma.codeRedemption.upsert({
+  // Premium'u aktifken hiçbir kod kullanılamaz (süreler üst üste binmez).
+  if (await getEffectivePremium(session.user.id))
+    return { ok: false, error: t("Premium üyeliğin aktifken kod kullanamazsın.") };
+
+  const used = await prisma.codeRedemption.findUnique({
     where: { codeId_userId: { codeId: dc.id, userId: session.user.id } },
-    update: {},
-    create: { codeId: dc.id, userId: session.user.id },
   });
+  if (used) return { ok: false, error: t("Bu kodu daha önce kullandın.") };
+
+  await prisma.codeRedemption.create({
+    data: { codeId: dc.id, userId: session.user.id },
+  });
+
+  if (dc.kind === "trial" && dc.trialDays) {
+    const until = new Date(Date.now() + dc.trialDays * 24 * 3600 * 1000);
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        premium: true,
+        premiumPlan: null,
+        premiumSource: "trial",
+        premiumUntil: until,
+      },
+    });
+    revalidatePath("/premium");
+    return { ok: true, trialDays: dc.trialDays };
+  }
 
   return { ok: true, percent: dc.percent };
 }
@@ -1603,7 +1627,10 @@ export async function applyDiscountCode(
 
 export async function adminCreateCode(input: {
   code: string;
+  kind?: "discount" | "trial";
   percent: number;
+  trialDays?: number;
+  maxUses?: number;
   influencer?: string;
   expiresAt?: string; // yyyy-mm-dd
 }): Promise<ActionState> {
@@ -1613,9 +1640,17 @@ export async function adminCreateCode(input: {
   const code = input.code.trim().toUpperCase();
   if (!/^[A-Z0-9]{3,20}$/.test(code))
     return { ok: false, error: t("Kod 3-20 harf/rakam olmalı (örn. KODUGIRINIZ).") };
-  const percent = Math.round(input.percent);
-  if (!Number.isFinite(percent) || percent < 1 || percent > 90)
+  const kind = input.kind === "trial" ? "trial" : "discount";
+  const percent = kind === "trial" ? 0 : Math.round(input.percent);
+  if (kind === "discount" && (!Number.isFinite(percent) || percent < 1 || percent > 90))
     return { ok: false, error: t("İndirim %1 ile %90 arasında olmalı.") };
+  const trialDays = kind === "trial" ? Math.round(input.trialDays ?? 0) : null;
+  if (kind === "trial" && (!trialDays || trialDays < 1 || trialDays > 365))
+    return { ok: false, error: t("Deneme süresi 1 ile 365 gün arasında olmalı.") };
+  const maxUses =
+    input.maxUses != null && Number.isFinite(input.maxUses) && input.maxUses > 0
+      ? Math.round(input.maxUses)
+      : null;
 
   const exists = await prisma.discountCode.findUnique({ where: { code } });
   if (exists) return { ok: false, error: t("Bu kod zaten var.") };
@@ -1623,7 +1658,10 @@ export async function adminCreateCode(input: {
   await prisma.discountCode.create({
     data: {
       code,
+      kind,
       percent,
+      trialDays,
+      maxUses,
       influencer: input.influencer?.trim() || null,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     },

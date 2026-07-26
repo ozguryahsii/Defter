@@ -12,6 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useT } from "@/components/i18n-provider";
 
 /** Yeni indirim kodu oluşturma formu. */
@@ -19,7 +26,10 @@ export function CodeCreateForm() {
   const router = useRouter();
   const t = useT();
   const [code, setCode] = useState("");
+  const [kind, setKind] = useState<"discount" | "trial">("discount");
   const [percent, setPercent] = useState("20");
+  const [trialDays, setTrialDays] = useState("30");
+  const [maxUses, setMaxUses] = useState("");
   const [influencer, setInfluencer] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,7 +39,10 @@ export function CodeCreateForm() {
     setBusy(true);
     const res = await adminCreateCode({
       code,
-      percent: parseInt(percent, 10),
+      kind,
+      percent: parseInt(percent, 10) || 0,
+      trialDays: parseInt(trialDays, 10) || undefined,
+      maxUses: maxUses ? parseInt(maxUses, 10) : undefined,
       influencer: influencer || undefined,
       expiresAt: expiresAt || undefined,
     });
@@ -62,15 +75,53 @@ export function CodeCreateForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="ac-percent">{t("İndirim (%)")}</Label>
+        <Label>{t("Kod türü")}</Label>
+        <Select value={kind} onValueChange={(v) => setKind(v as "discount" | "trial")}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="discount">{t("İndirim kodu (%)")}</SelectItem>
+            <SelectItem value="trial">{t("Deneme kodu (gün)")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {kind === "discount" ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="ac-percent">{t("İndirim (%)")}</Label>
+          <Input
+            id="ac-percent"
+            type="number"
+            min={1}
+            max={90}
+            value={percent}
+            onChange={(e) => setPercent(e.target.value)}
+            required
+          />
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor="ac-days">{t("Deneme süresi (gün)")}</Label>
+          <Input
+            id="ac-days"
+            type="number"
+            min={1}
+            max={365}
+            value={trialDays}
+            onChange={(e) => setTrialDays(e.target.value)}
+            required
+          />
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <Label htmlFor="ac-max">{t("Kontenjan (boş = sınırsız)")}</Label>
         <Input
-          id="ac-percent"
+          id="ac-max"
           type="number"
           min={1}
-          max={90}
-          value={percent}
-          onChange={(e) => setPercent(e.target.value)}
-          required
+          value={maxUses}
+          onChange={(e) => setMaxUses(e.target.value)}
+          placeholder={t("örn. 50")}
         />
       </div>
       <div className="space-y-1.5">

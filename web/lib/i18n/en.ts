@@ -460,6 +460,21 @@ export const EN: Record<string, string> = {
     "Choose QR image(s) — multiple allowed",
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
+  "Kod türü": "Code type",
+  "İndirim kodu (%)": "Discount code (%)",
+  "Deneme kodu (gün)": "Trial code (days)",
+  "Deneme süresi (gün)": "Trial length (days)",
+  "Kontenjan (boş = sınırsız)": "Usage limit (empty = unlimited)",
+  "örn. 50": "e.g. 50",
+  "{n} gün deneme": "{n}-day trial",
+  "Bu kodun kontenjanı dolmuş.": "This code's usage limit is reached.",
+  "Premium üyeliğin aktifken kod kullanamazsın.":
+    "You can't redeem a code while your Premium is active.",
+  "Bu kodu daha önce kullandın.": "You already used this code.",
+  "Deneme süresi 1 ile 365 gün arasında olmalı.":
+    "Trial length must be between 1 and 365 days.",
+  "{n} günlük Premium başladı! 🎉": "Your {n}-day Premium has started! 🎉",
+  "Deneme süresi — {n} gün kaldı": "Trial — {n} day(s) left",
   "Parolayı göster": "Show password",
   "Parolayı gizle": "Hide password",
 

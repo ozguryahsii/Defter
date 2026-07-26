@@ -18,6 +18,7 @@ export default async function PremiumPage() {
     select: {
       premium: true,
       premiumPlan: true,
+      premiumUntil: true,
       codeRedemptions: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -31,7 +32,8 @@ export default async function PremiumPage() {
 
   return (
     <PremiumScreen
-      premium={user.premium}
+      premium={user.premium && (!user.premiumUntil || user.premiumUntil > new Date())}
+      premiumUntil={user.premiumUntil?.toISOString() ?? null}
       plan={user.premiumPlan}
       initialCode={
         lastCode && lastCode.active

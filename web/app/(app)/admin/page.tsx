@@ -137,7 +137,9 @@ export default async function AdminPage({
                     {c.code}
                   </span>
                   <Badge variant="brand" className="text-[10px]">
-                    %{c.percent}
+                    {c.kind === "trial"
+                      ? t("{n} gün deneme", { n: c.trialDays ?? 0 })
+                      : `%${c.percent}`}
                   </Badge>
                   {c.influencer && (
                     <Badge variant="secondary" className="text-[10px]">
@@ -150,7 +152,9 @@ export default async function AdminPage({
                     </span>
                   )}
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {t("{n} kullanım", { n: c.redemptions.length })}
+                    {c.maxUses != null
+                      ? `${c.redemptions.length}/${c.maxUses}`
+                      : t("{n} kullanım", { n: c.redemptions.length })}
                   </span>
                   <CodeActiveToggle codeId={c.id} active={c.active} />
                 </div>
