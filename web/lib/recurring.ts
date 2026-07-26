@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { equalShares } from "./settlement";
 import { logActivity } from "./activity";
+import { getT } from "./i18n/server";
 
 function advance(date: Date, interval: string): Date {
   const d = new Date(date);
@@ -71,7 +72,7 @@ export async function materializeRecurring(groupId: string): Promise<void> {
         groupId,
         actorId: tpl.payerId,
         type: "recurring.run",
-        summary: `Tekrarlayan "${tpl.description}" ${created} kez işlendi`,
+        summary: getT()('Tekrarlayan "{desc}" {n} kez işlendi', { desc: tpl.description, n: created }),
       });
     }
   }

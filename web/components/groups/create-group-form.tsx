@@ -65,7 +65,7 @@ export function CreateGroupForm() {
           <SelectContent className="max-h-72">
             {CURRENCIES.map((c) => (
               <SelectItem key={c.code} value={c.code}>
-                {c.code} — {c.name}
+                {c.code} — {t(c.name)}
               </SelectItem>
             ))}
           </SelectContent>

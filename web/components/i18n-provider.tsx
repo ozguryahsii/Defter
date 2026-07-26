@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { makeT, type Locale, type TFunc } from "@/lib/i18n";
+import { setFormatLocale } from "@/lib/format";
 
 const I18nContext = createContext<{ locale: Locale; t: TFunc }>({
-  locale: "tr",
-  t: makeT("tr"),
+  locale: "en",
+  t: makeT("en"),
 });
 
 export function I18nProvider({
@@ -15,6 +16,7 @@ export function I18nProvider({
   locale: Locale;
   children: React.ReactNode;
 }) {
+  setFormatLocale(locale);
   const value = useMemo(() => ({ locale, t: makeT(locale) }), [locale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

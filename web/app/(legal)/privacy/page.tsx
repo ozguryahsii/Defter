@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Gizlilik Politikası" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Gizlilik Politikası") };
+}
 
 function PrivacyEn() {
   return (

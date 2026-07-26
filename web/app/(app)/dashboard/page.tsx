@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { CategoryDonut } from "@/components/charts/category-donut";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Genel Bakış" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Genel Bakış") };
+}
 
 export default async function DashboardPage() {
   const session = await auth();

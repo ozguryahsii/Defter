@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Kullanım Şartları" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Kullanım Şartları") };
+}
 
 function TermsEn() {
   return (

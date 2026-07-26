@@ -58,7 +58,7 @@ export function ProfileForm({
           name="email"
           type="email"
           defaultValue={initial.email}
-          placeholder="ornek@eposta.com"
+          placeholder={t("ornek@eposta.com")}
           autoComplete="email"
         />
         {fieldErrors.email && (

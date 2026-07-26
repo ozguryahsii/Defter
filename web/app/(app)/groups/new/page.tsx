@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Yeni Grup" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Yeni Grup") };
+}
 
 export default function NewGroupPage() {
   const t = getT();

@@ -64,7 +64,7 @@ export function LoginForm() {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            placeholder="kullaniciadi"
+            placeholder={t("kullaniciadi")}
             required
             autoFocus
           />

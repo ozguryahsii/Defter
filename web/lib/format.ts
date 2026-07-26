@@ -1,14 +1,20 @@
-const CURRENCY_LOCALE: Record<string, string> = {
-  TRY: "tr-TR",
-  USD: "en-US",
-  EUR: "de-DE",
-  GBP: "en-GB",
-};
+/**
+ * Tarih/sayı biçimleri seçili uygulama diline uyar. Modül-düzeyi locale,
+ * sunucuda her istekte kök layout'ta, istemcide I18nProvider'da ayarlanır.
+ */
+let fmtLocale: "tr" | "en" = "en";
+
+export function setFormatLocale(locale: "tr" | "en") {
+  fmtLocale = locale;
+}
+
+function intlTag(): string {
+  return fmtLocale === "tr" ? "tr-TR" : "en-GB";
+}
 
 export function formatCurrency(amount: number, currency = "TRY"): string {
-  const locale = CURRENCY_LOCALE[currency] ?? "en-US";
   try {
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat(intlTag(), {
       style: "currency",
       currency,
       maximumFractionDigits: 2,
@@ -19,14 +25,14 @@ export function formatCurrency(amount: number, currency = "TRY"): string {
 }
 
 export function formatNumber(amount: number): string {
-  return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(
+  return new Intl.NumberFormat(intlTag(), { maximumFractionDigits: 2 }).format(
     amount,
   );
 }
 
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("tr-TR", {
+  return new Intl.DateTimeFormat(intlTag(), {
     day: "2-digit",
     month: "short",
     year: "numeric",

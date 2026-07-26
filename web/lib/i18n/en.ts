@@ -460,4 +460,203 @@ export const EN: Record<string, string> = {
     "Choose QR image(s) — multiple allowed",
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
+
+  // --- Sekme başlıkları / meta ---
+  "SOBSO! — Ortak Harcama Paylaşımı": "SOBSO! — Shared Expense Splitting",
+  "Arkadaş grupları ve ortak girişimler için premium harcama paylaşım ve borç hesaplama uygulaması. I hope so!":
+    "A premium expense-splitting and debt-tracking app for friend groups and shared ventures. I hope so!",
+  Giriş: "Sign In",
+  Kayıt: "Sign Up",
+  "Yeni Grup": "New Group",
+  "Gruba Katıl": "Join Group",
+
+  // --- Placeholder'lar ---
+  kullaniciadi: "username",
+  "ornek@eposta.com": "you@example.com",
+  KODUGIRINIZ: "YOURCODE",
+
+  // --- Para birimi adları ---
+  "ABD Doları": "US Dollar",
+  "Arnavutluk Leki": "Albanian Lek",
+  "BAE Dirhemi": "UAE Dirham",
+  "Belarus Rublesi": "Belarusian Ruble",
+  "Bosna-Hersek Markı": "Bosnian Mark",
+  "Bulgar Levası": "Bulgarian Lev",
+  "Çek Korunası": "Czech Koruna",
+  "Çin Yuanı": "Chinese Yuan",
+  "Danimarka Kronu": "Danish Krone",
+  Euro: "Euro",
+  "Gürcistan Larisi": "Georgian Lari",
+  "İngiliz Sterlini": "British Pound",
+  "İsveç Kronu": "Swedish Krona",
+  "İsviçre Frangı": "Swiss Franc",
+  "İzlanda Kronu": "Icelandic Krona",
+  "Japon Yeni": "Japanese Yen",
+  "Macar Forinti": "Hungarian Forint",
+  "Makedon Dinarı": "Macedonian Denar",
+  "Moldova Leyi": "Moldovan Leu",
+  "Norveç Kronu": "Norwegian Krone",
+  "Polonya Zlotisi": "Polish Zloty",
+  "Rumen Leyi": "Romanian Leu",
+  "Rus Rublesi": "Russian Ruble",
+  "Sırp Dinarı": "Serbian Dinar",
+  "Türk Lirası": "Turkish Lira",
+  "Ukrayna Grivnası": "Ukrainian Hryvnia",
+
+  // --- Sunucu mesajları: genel ---
+  "Oturum bulunamadı.": "Session not found.",
+  "Bu gruba erişiminiz yok.": "You don't have access to this group.",
+  "Grup bulunamadı.": "Group not found.",
+  "Kullanıcı bulunamadı.": "User not found.",
+  "Harcama bulunamadı.": "Expense not found.",
+  "Kayıt bulunamadı.": "Record not found.",
+  "Üye bulunamadı.": "Member not found.",
+  "Talep bulunamadı.": "Request not found.",
+  "Dosya seçilmedi.": "No file selected.",
+  "Bir fotoğraf seçmelisin.": "Please choose a photo.",
+  Kullanıcı: "User",
+  "Bir kullanıcı": "Someone",
+  "Bir üye": "A member",
+  "Bir grup": "a group",
+  "Grup sahibi": "The group owner",
+  "Silinen Kullanıcı": "Deleted User",
+
+  // --- Sunucu mesajları: doğrulama ---
+  "Tutar 0'dan büyük olmalı.": "Amount must be greater than 0.",
+  "Açıklama gerekli.": "A description is required.",
+  "Ödeyen grup üyesi olmalı.": "The payer must be a group member.",
+  "En az bir katılımcı seçmelisiniz.": "Pick at least one participant.",
+  "Payların toplamı ({sum}) tutara ({amount}) eşit olmalı.":
+    "The shares total ({sum}) must equal the amount ({amount}).",
+  "Geçersiz başlangıç tarihi.": "Invalid start date.",
+  "Geçersiz üye.": "Invalid member.",
+  "Geçersiz ad.": "Invalid name.",
+  "Geçerli bir TR IBAN girin (TR + 24 rakam).":
+    "Enter a valid Turkish IBAN (TR + 24 digits).",
+  "En az 8 karakter olmalı.": "Must be at least 8 characters.",
+  "Parolalar eşleşmiyor.": "Passwords don't match.",
+  "Mevcut parola hatalı.": "Current password is wrong.",
+  "Parola hatalı.": "Wrong password.",
+  "Bu e-posta başka bir hesapta kayıtlı.":
+    "This e-mail is registered to another account.",
+  "Kullanıcı adı boş olamaz.": "Username can't be empty.",
+
+  // --- Sunucu mesajları: gruplar / üyelik ---
+  "Kişisel bütçe grubuna üye eklenemez.":
+    "Members can't be added to a personal budget.",
+  "Grup arşivde; üye eklenemez.": "Group is archived; members can't be added.",
+  "Grup arşivde; değişiklik yapılamaz.":
+    "Group is archived; changes aren't allowed.",
+  "Grup arşivde; davet oluşturulamaz.":
+    "Group is archived; invites can't be created.",
+  "Grup arşivde; önce arşivden çıkar.":
+    "Group is archived; unarchive it first.",
+  "Kendini davet edemezsin.": "You can't invite yourself.",
+  "'{name}' bulunamadı.": "'{name}' was not found.",
+  "'{name}' zaten grupta.": "'{name}' is already in the group.",
+  "'{name}' taleplerini kalıcı olarak reddetti; bu kullanıcıyı gruba ekleyemezsin.":
+    "'{name}' permanently declined your requests; you can't add this user to groups.",
+  "Taleplerini çok reddettiği için '{name}' kullanıcısını ~{hours} saat boyunca gruba ekleyemezsin.":
+    "Because they declined too many of your requests, you can't add '{name}' for ~{hours} hours.",
+  "'{name}' için bu grupta zaten bekleyen bir davet var.":
+    "There's already a pending invitation for '{name}' in this group.",
+  "'{name}' için 10 bekleyen talebin var; yanıtlanmadan yenisini gönderemezsin.":
+    "You have 10 pending requests for '{name}'; wait for a response before sending more.",
+  "Bu talep zaten yanıtlanmış.": "This request was already answered.",
+  "Grup arşivlendiği için katılamazsın.":
+    "You can't join because the group is archived.",
+  "Bu gruba katılım kapalı.": "Joining this group is closed.",
+  "Bu grup arşivlendi; katılım kapalı.":
+    "This group is archived; joining is closed.",
+  "Davet linkinin süresi dolmuş.": "This invite link has expired.",
+  "Davet linki kullanım limitine ulaşmış.":
+    "This invite link reached its usage limit.",
+  "Üyeyi yalnızca grubu kuran kişi çıkarabilir.":
+    "Only the group owner can remove members.",
+  "Grup sahibi çıkarılamaz.": "The group owner can't be removed.",
+  "Bu üyenin harcama/ödeme kayıtları var; çıkarılamaz. (Yanlış eklenen üyeler ancak kayıt oluşmadan çıkarılabilir.)":
+    "This member has expense/payment records and can't be removed. (Mistakenly added members can only be removed before any records exist.)",
+  "Grup adını yalnızca grup sahibi değiştirebilir.":
+    "Only the group owner can rename the group.",
+  "Kişisel bütçenin adı değiştirilemez.":
+    "The personal budget can't be renamed.",
+  "Bunu yalnızca grup sahibi yapabilir.": "Only the group owner can do this.",
+  "Kişisel bütçe arşivlenemez.": "The personal budget can't be archived.",
+  "Kişisel bütçeden ayrılamazsın.": "You can't leave your personal budget.",
+  "Grup sahibi ayrılamaz. İstersen grubu arşivleyebilir veya silebilirsin.":
+    "The owner can't leave. You can archive or delete the group instead.",
+  "Açık borcun/alacağın varken gruptan ayrılamazsın. Önce ödeşmeyi tamamla.":
+    "You can't leave while you have open debts or credits. Settle up first.",
+  "Grubu yalnızca kuran kişi silebilir.": "Only the owner can delete the group.",
+  "Kişisel bütçe grubuna davet oluşturulamaz.":
+    "Invites can't be created for a personal budget.",
+  "Bütçeyi yalnızca grup sahibi belirleyebilir.":
+    "Only the group owner can set the budget.",
+  "Bu harcamayı silme yetkiniz yok.":
+    "You're not allowed to delete this expense.",
+  "Bu harcamayı düzenleme yetkiniz yok.":
+    "You're not allowed to edit this expense.",
+  "Bunu silme yetkiniz yok.": "You're not allowed to delete this.",
+  "Gelir yalnızca kişisel bütçeye eklenebilir.":
+    "Income can only be added to the personal budget.",
+
+  // --- Sunucu mesajları: ödeşme ---
+  "Bu borcu yalnızca alacaklı (parayı alan kişi) ödendi işaretleyebilir.":
+    "Only the creditor (who receives the money) can mark this debt as paid.",
+  "Bu borç güncel değil ya da zaten kapanmış.":
+    "This debt is out of date or already settled.",
+  "Bu borç güncel değil.": "This debt is out of date.",
+  "Bu ödemeyi yalnızca alacaklı geri alabilir.":
+    "Only the creditor can undo this payment.",
+  "Bu borç için bugün zaten hatırlatma gönderdin (günde 1 kez).":
+    "You already sent a reminder for this debt today (once a day).",
+
+  // --- Bildirimler / aktivite (kayıt anında çevrilir) ---
+  '"{name}" grubu oluşturuldu': '"{name}" group was created',
+  '"{group}" grubuna davet edildin': "You were invited to \"{group}\"",
+  "{name} seni eklemek istiyor. Onaylarsan gruba katılırsın.":
+    "{name} wants to add you. Accept to join the group.",
+  "{name} daveti kabul edip gruba katıldı":
+    "{name} accepted the invitation and joined",
+  "{name} davetini kabul etti": "{name} accepted your invitation",
+  '"{group}" grubuna katıldı.': "They joined \"{group}\".",
+  "Grup ekleme engeli (kalıcı)": "Group-add block (permanent)",
+  "Grup ekleme engeli (24 saat)": "Group-add block (24 hours)",
+  "{name}, taleplerini tekrar tekrar reddetti. Bu kullanıcıyı artık hiçbir gruba ekleyemezsin.":
+    "{name} declined your requests repeatedly. You can no longer add this user to any group.",
+  "{name}, taleplerini 5 kez reddetti. 24 saat boyunca bu kullanıcıyı hiçbir gruba ekleyemezsin.":
+    "{name} declined your requests 5 times. You can't add this user to any group for 24 hours.",
+  "{name} harcama ekledi": "{name} added an expense",
+  '"{desc}" harcaması silindi': 'Expense "{desc}" was deleted',
+  '"{desc}" harcaması düzenlendi': 'Expense "{desc}" was edited',
+  "{from} → {to}: ödeme alındı ({amount})":
+    "{from} → {to}: payment received ({amount})",
+  "{name} ödemeni onayladı": "{name} confirmed your payment",
+  "{amount} tutarındaki borcun kapandı. 🎉":
+    "Your debt of {amount} is settled. 🎉",
+  "{name} borcunu hatırlattı": "{name} sent a debt reminder",
+  '"{group}" grubunda {amount} {cur} borcun var.':
+    'You owe {amount} {cur} in "{group}".',
+  "{from} → {to} ödemesi geri alındı": "{from} → {to} payment was undone",
+  "{name} davet linkiyle katıldı": "{name} joined via invite link",
+  "{name} gruptan çıkarıldı": "{name} was removed from the group",
+  '"{group}" grubundan çıkarıldın': "You were removed from \"{group}\"",
+  "{name} seni gruptan çıkardı.": "{name} removed you from the group.",
+  'Grup adı "{old}" → "{new}" olarak değiştirildi':
+    'Group renamed from "{old}" to "{new}"',
+  "Grubun adı değişti": "Group name changed",
+  '"{old}" grubunun yeni adı: "{new}"':
+    'The group "{old}" is now called "{new}"',
+  "Grup arşivlendi": "Group archived",
+  "Grup arşivden çıkarıldı": "Group unarchived",
+  "{name} gruptan ayrıldı": "{name} left the group",
+  '{name} "{group}" grubundan ayrıldı': '{name} left "{group}"',
+  "Aylık bütçe {x} olarak ayarlandı": "Monthly budget set to {x}",
+  "Aylık bütçe kaldırıldı": "Monthly budget removed",
+  'Tekrarlayan harcama eklendi: "{desc}"': 'Recurring expense added: "{desc}"',
+  'Tekrarlayan "{desc}" {n} kez işlendi':
+    'Recurring "{desc}" ran {n} time(s)',
+  "Yaklaşan ödeme: {desc}": "Upcoming payment: {desc}",
+  "{amount} tutarındaki ödemene {n} gün kaldı.":
+    "{n} day(s) left until your payment of {amount}.",
 };

@@ -10,7 +10,9 @@ import { Reveal } from "@/components/magic/reveal";
 import { Button } from "@/components/ui/button";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Gruplar" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Gruplar") };
+}
 
 export default async function GroupsPage() {
   const session = await auth();

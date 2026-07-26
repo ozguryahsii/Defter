@@ -4,8 +4,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getGroupDetail } from "@/lib/queries";
 import { GroupScreen } from "@/components/groups/group-screen";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Kişisel Bütçe" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Kişisel Bütçe") };
+}
 
 // The personal budget renders on its own route so the sidebar highlights
 // "Kişisel Bütçe" (not "Gruplar"). The backing group is created on first visit.

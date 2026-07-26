@@ -37,7 +37,7 @@ function relativeTime(date: Date, t: (k: string, p?: Record<string, string | num
   if (h < 24) return t("{n} sa önce", { n: h });
   const d = Math.floor(h / 24);
   if (d < 30) return t("{n} gün önce", { n: d });
-  return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" }).format(
+  return new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short" }).format(
     new Date(date),
   );
 }

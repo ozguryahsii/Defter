@@ -63,7 +63,7 @@ export function RegisterForm() {
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="kullaniciadi"
+          placeholder={t("kullaniciadi")}
           required
           autoFocus
         />
@@ -78,7 +78,7 @@ export function RegisterForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="ornek@eposta.com"
+          placeholder={t("ornek@eposta.com")}
           required
         />
         {fieldErrors.email && (

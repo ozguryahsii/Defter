@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
+import { getT } from "@/lib/i18n/server";
 
 /**
  * Lazy due-date reminders for the personal budget: any future-dated expense
@@ -40,8 +41,8 @@ async function generateDueReminders(userId: string): Promise<void> {
       await notify({
         userId,
         type: "payment.due",
-        title: `Yaklaşan ödeme: ${e.description}`,
-        body: `${e.amount.toFixed(2)} tutarındaki ödemene ${daysLeft} gün kaldı.`,
+        title: getT()("Yaklaşan ödeme: {desc}", { desc: e.description }),
+        body: getT()("{amount} tutarındaki ödemene {n} gün kaldı.", { amount: e.amount.toFixed(2), n: daysLeft }),
         groupId: e.groupId,
         meta: { due: e.id, d: daysLeft },
       });

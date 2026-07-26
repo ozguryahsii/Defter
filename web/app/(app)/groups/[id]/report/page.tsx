@@ -10,7 +10,9 @@ import { PrintButton } from "@/components/groups/print-button";
 import { CategoryDonut } from "@/components/charts/category-donut";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Rapor" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Rapor") };
+}
 
 export default async function GroupReportPage({
   params,

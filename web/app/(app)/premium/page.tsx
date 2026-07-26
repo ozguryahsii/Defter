@@ -3,8 +3,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PremiumScreen } from "@/components/premium/premium-screen";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Premium" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Premium") };
+}
 
 export default async function PremiumPage() {
   const session = await auth();

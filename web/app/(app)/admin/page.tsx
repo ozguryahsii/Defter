@@ -14,7 +14,9 @@ import {
 } from "@/components/admin/admin-controls";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Yönetim" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Yönetim") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage({

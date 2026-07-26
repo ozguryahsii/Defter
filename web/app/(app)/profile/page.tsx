@@ -9,7 +9,9 @@ import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Profil" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Profil") };
+}
 
 export default async function ProfilePage() {
   const session = await auth();

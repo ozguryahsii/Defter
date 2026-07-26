@@ -4,7 +4,9 @@ import { LoginForm } from "@/components/auth/login-form";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Giriş" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Giriş") };
+}
 
 export default function LoginPage() {
   const t = getT();

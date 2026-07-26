@@ -3,8 +3,11 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { getGroupDetail } from "@/lib/queries";
 import { GroupScreen } from "@/components/groups/group-screen";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Grup" };
+export function generateMetadata(): Metadata {
+  return { title: getT()("Grup") };
+}
 
 export default async function GroupDetailPage({
   params,

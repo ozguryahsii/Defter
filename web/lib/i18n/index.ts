@@ -11,8 +11,12 @@ export type Locale = "tr" | "en";
 
 export const LOCALE_COOKIE = "sobso_locale";
 
+/**
+ * Varsayılan dil İNGİLİZCE'dir; kullanıcı TR'yi seçerse çerezde saklanır ve
+ * o değiştirene kadar Türkçe devam eder.
+ */
 export function normalizeLocale(value: unknown): Locale {
-  return value === "en" ? "en" : "tr";
+  return value === "tr" ? "tr" : "en";
 }
 
 export type TFunc = (key: string, params?: Record<string, string | number>) => string;

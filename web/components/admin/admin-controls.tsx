@@ -53,7 +53,7 @@ export function CodeCreateForm() {
           id="ac-code"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="KODUGIRINIZ"
+          placeholder={t("KODUGIRINIZ")}
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
