@@ -461,6 +461,8 @@ export const EN: Record<string, string> = {
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
   "Fişi Tara": "Scan Receipt",
+  "Doğru sonuç için fiş fotoğrafını düz (ters çevirmeden) yükleyin.":
+    "For accurate results, upload the receipt photo upright (not rotated).",
   "Fiş okunuyor…": "Reading receipt…",
   "Fiş tarama Premium özelliğidir.": "Receipt scanning is a Premium feature.",
   "Bu ayki fiş tarama hakkın doldu (100 fiş/ay). Yeni ay başında yenilenir.":

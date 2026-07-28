@@ -312,6 +312,9 @@ export function AddExpenseDialog({
                 )}
                 {scanning ? t("Fiş okunuyor…") : t("Fişi Tara")}
               </Button>
+              <p className="mt-1 text-center text-[10px] text-muted-foreground/80">
+                {t("Doğru sonuç için fiş fotoğrafını düz (ters çevirmeden) yükleyin.")}
+              </p>
             </div>
           )}
           <div className="space-y-2">
