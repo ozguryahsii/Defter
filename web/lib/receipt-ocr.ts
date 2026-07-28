@@ -10,7 +10,9 @@ export type ReceiptScan = { merchant: string | null; amount: number | null };
 function parseAmount(text: string): number | null {
   const lines = text.split(/\n+/);
   const toNum = (s: string) =>
-    parseFloat(s.replace(/\./g, "").replace(",", "."));
+    s.includes(",")
+      ? parseFloat(s.replace(/\./g, "").replace(",", ".")) // 1.234,56 → 1234.56
+      : parseFloat(s); // 12.34 → 12.34
   // 1) TOPLAM/TUTAR/TOTAL geçen satırdaki sayı
   for (const line of lines) {
     if (/topla|tutar|total/i.test(line)) {

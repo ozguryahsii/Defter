@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n-provider";
+import { parseDecimal } from "@/lib/decimal";
 
 export function BudgetCard({
   groupId,
@@ -33,7 +34,7 @@ export function BudgetCard({
 
   async function save() {
     setLoading(true);
-    const parsed = value.trim() === "" ? null : parseFloat(value);
+    const parsed = value.trim() === "" ? null : parseDecimal(value);
     const res = await setBudget(groupId, parsed);
     setLoading(false);
     if (!res.ok) {
@@ -68,9 +69,7 @@ export function BudgetCard({
       {editing ? (
         <div className="flex items-center gap-2">
           <Input
-            type="number"
-            min="0"
-            step="0.01"
+            type="text"
             inputMode="decimal"
             value={value}
             onChange={(e) => setValue(e.target.value)}

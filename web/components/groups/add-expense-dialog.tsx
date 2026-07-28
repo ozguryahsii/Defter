@@ -8,6 +8,7 @@ import { addExpense, editExpense } from "@/lib/actions";
 import { equalShares } from "@/lib/settlement";
 import { formatCurrency } from "@/lib/format";
 import { CURRENCIES } from "@/lib/currencies";
+import { parseDecimal } from "@/lib/decimal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,7 +121,7 @@ export function AddExpenseDialog({
     };
   }, [entryCurrency, currency]);
 
-  const enteredAmount = parseFloat(amount) || 0;
+  const enteredAmount = parseDecimal(amount);
   const isForeign = entryCurrency !== currency;
   const rate = isForeign ? (autoRate ?? 0) : 1;
   // numericAmount is always in the GROUP currency (converted when foreign).
@@ -131,7 +132,7 @@ export function AddExpenseDialog({
 
   const exactSum = useMemo(
     () =>
-      participants.reduce((s, id) => s + (parseFloat(exact[id] ?? "") || 0), 0),
+      participants.reduce((s, id) => s + parseDecimal(exact[id] ?? ""), 0),
     [participants, exact],
   );
   const remainder = numericAmount - exactSum;
@@ -178,7 +179,7 @@ export function AddExpenseDialog({
     const exactAmounts =
       splitType === "Exact"
         ? Object.fromEntries(
-            participants.map((id) => [id, parseFloat(exact[id] ?? "") || 0]),
+            participants.map((id) => [id, parseDecimal(exact[id] ?? "")]),
           )
         : undefined;
 
@@ -324,9 +325,7 @@ export function AddExpenseDialog({
               <div className="flex gap-2">
                 <Input
                   id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                  type="text"
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -493,9 +492,7 @@ export function AddExpenseDialog({
                     <span className="flex-1 text-sm">{m.name}</span>
                     {splitType === "Exact" && checked && (
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
                         inputMode="decimal"
                         value={exact[m.userId] ?? ""}
                         onChange={(e) =>

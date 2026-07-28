@@ -18,6 +18,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { RecurringItem } from "@/lib/queries";
 import { useT } from "@/components/i18n-provider";
+import { parseDecimal } from "@/lib/decimal";
 
 type Member = { userId: string; name: string };
 
@@ -53,7 +54,7 @@ export function RecurringSection({
     const res = await addRecurring({
       groupId,
       description,
-      amount: parseFloat(amount) || 0,
+      amount: parseDecimal(amount),
       payerId: currentUserId,
       interval,
       startDate,
@@ -147,9 +148,8 @@ export function RecurringSection({
               <Label htmlFor="ramount">{t("Tutar")} ({currency})</Label>
               <Input
                 id="ramount"
-                type="number"
-                min="0.01"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
