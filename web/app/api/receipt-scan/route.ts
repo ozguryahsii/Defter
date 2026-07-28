@@ -12,21 +12,25 @@ const OCR_MONTHLY_LIMIT = 100;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const MODEL = process.env.ANTHROPIC_OCR_MODEL || "claude-haiku-4-5-20251001";
 
-const PROMPT = `You are reading a photo of a retail receipt. Respond with ONLY minified JSON, no explanations, exactly this shape:
+const PROMPT = `You are reading a photo of a retail/restaurant receipt. The photo may be rotated sideways or completely upside down — if so, mentally rotate it and read it correctly anyway.
+
+Step 1: Briefly transcribe the key lines you can read (merchant name at the top, the line items, and the total line). Keep it short.
+Step 2: On the LAST line of your reply, output ONLY minified JSON, exactly this shape:
 {"amount":<number|null>,"currency":<string|null>,"merchant":<string|null>}
-- amount: the grand total actually paid (look for TOPLAM/TOTAL/SUMA/CELKEM etc.). Use a dot as decimal separator, no thousands separators. null if unreadable.
-- currency: ISO 4217 code inferred from currency symbols or text on the receipt (₺ or TL → TRY, € → EUR, Kč → CZK, zł → PLN, £ → GBP, $ → USD, kr → SEK/NOK/DKK by country, Ft → HUF). null if you cannot tell.
-- merchant: the store/brand name printed at the top of the receipt, cleaned up (e.g. "Migros", "Albert", "Lidl"). null if unreadable.`;
+- amount: the grand total actually paid (TOPLAM/TOTAL/SUMME/Zwischensumme/CELKEM etc.). Sanity-check it against the line items — it should roughly equal their sum. Dot as decimal separator, no thousands separators. null if unreadable.
+- currency: ISO 4217 code inferred from symbols, language or country on the receipt (₺ or TL → TRY, € → EUR, Kč → CZK, zł → PLN, £ → GBP, $ → USD, Ft → HUF, kr → SEK/NOK/DKK by country; Austria/Germany → EUR). null only if you truly cannot tell.
+- merchant: the store/restaurant name printed at the top, cleaned up (e.g. "Migros", "Meissl & Schadn"). null if unreadable.`;
 
 function extractJson(text: string): {
   amount?: unknown;
   currency?: unknown;
   merchant?: unknown;
 } | null {
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) return null;
+  // Model önce serbest metinle okur; JSON son satırdadır → SON eşleşmeyi al.
+  const matches = text.match(/\{[^{}]*\}/g);
+  if (!matches?.length) return null;
   try {
-    return JSON.parse(m[0]);
+    return JSON.parse(matches[matches.length - 1]);
   } catch {
     return null;
   }
@@ -86,7 +90,7 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 300,
+      max_tokens: 800,
       messages: [
         {
           role: "user",

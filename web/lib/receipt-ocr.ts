@@ -20,7 +20,10 @@ const MAX_DIM = 1568;
 /** Büyük fotoğrafları JPEG'e küçültür; küçükse olduğu gibi döner. */
 async function downscale(file: File): Promise<Blob> {
   try {
-    const bitmap = await createImageBitmap(file);
+    // EXIF yönünü uygula — iPhone fotoğrafları aksi halde yan/ters gidebilir.
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    }).catch(() => createImageBitmap(file));
     const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
     if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
       bitmap.close();
