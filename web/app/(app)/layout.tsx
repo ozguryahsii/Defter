@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminUsername } from "@/lib/admin";
+import { getT } from "@/lib/i18n/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -17,8 +19,9 @@ export default async function AppLayout({
   // Foto yüklenince üst menüdeki avatarın anında tazelenmesi için sürüm.
   const me = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { avatarPath: true },
+    select: { avatarPath: true, email: true, emailVerified: true },
   });
+  const t = getT();
 
   return (
     <div className="min-h-screen">
@@ -35,6 +38,14 @@ export default async function AppLayout({
             isAdmin={isAdminUsername(session.user.username)}
           />
         </div>
+        {me?.email && !me.emailVerified && (
+          <Link
+            href="/verify-email"
+            className="block bg-amber-500/15 px-4 py-2 text-center text-xs font-medium text-amber-700 hover:bg-amber-500/25 dark:text-amber-400 print:hidden"
+          >
+            {t("E-posta adresin doğrulanmadı — doğrulamak için tıkla")}
+          </Link>
+        )}
         {/* pb-24: mobil alt gezinme çubuğunun içeriği örtmemesi için */}
         <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 lg:px-8 lg:py-8 lg:pb-8 print:max-w-none print:p-0">
           {children}

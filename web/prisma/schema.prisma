@@ -49,6 +49,21 @@ model User {
   codeRedemptions CodeRedemption[]
 }
 
+// 6-digit e-mail codes: signup verification + password reset.
+// Only a hash of the code is stored; codes expire and are attempt-limited.
+model EmailCode {
+  id        String    @id @default(cuid())
+  email     String // lowercase recipient
+  purpose   String // "verify" | "reset"
+  codeHash  String // sha256(code)
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, purpose, createdAt])
+}
+
 // Influencer discount code (e.g. OZGE20 => %20). Managed from /admin.
 model DiscountCode {
   id         String    @id @default(cuid())

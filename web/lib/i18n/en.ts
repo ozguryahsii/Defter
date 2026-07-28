@@ -534,6 +534,49 @@ export const EN: Record<string, string> = {
 
   // --- Sunucu mesajları: genel ---
   "Oturum bulunamadı.": "Session not found.",
+  // --- E-posta doğrulama + şifre sıfırlama ---
+  "E-posta Doğrulama": "Verify E-mail",
+  "E-postanı doğrula": "Verify your e-mail",
+  "Sana 6 haneli bir kod gönderdik: {email}":
+    "We sent a 6-digit code to: {email}",
+  "Doğrula": "Verify",
+  "Kodu tekrar gönder": "Resend code",
+  "Kod gönderildi.": "Code sent.",
+  "E-posta doğrulandı 🎉": "E-mail verified 🎉",
+  "E-posta adresin doğrulanmadı — doğrulamak için tıkla":
+    "Your e-mail isn't verified — tap to verify",
+  "Hesabında kayıtlı e-posta yok.": "Your account has no e-mail on file.",
+  "Çok sık kod istendi. Lütfen 1 saat sonra tekrar dene.":
+    "Too many codes requested. Please try again in an hour.",
+  "E-posta gönderilemedi. Lütfen daha sonra tekrar dene.":
+    "Couldn't send the e-mail. Please try again later.",
+  "Kod hatalı.": "Incorrect code.",
+  "Kodun süresi dolmuş; yeni kod iste.":
+    "The code has expired; request a new one.",
+  "Çok fazla yanlış deneme; yeni kod iste.":
+    "Too many wrong attempts; request a new one.",
+  "Şifremi Unuttum": "Forgot Password",
+  "Şifreni mi unuttun?": "Forgot your password?",
+  "E-posta adresini gir; sana 6 haneli bir sıfırlama kodu gönderelim.":
+    "Enter your e-mail and we'll send you a 6-digit reset code.",
+  "Kod gönder": "Send code",
+  "Eğer bu e-posta kayıtlıysa, sıfırlama kodu gönderildi.":
+    "If this e-mail is registered, a reset code has been sent.",
+  "6 haneli kod": "6-digit code",
+  "Parolayı sıfırla": "Reset password",
+  "Parolan güncellendi. Şimdi giriş yapabilirsin.":
+    "Your password has been updated. You can sign in now.",
+  "Parola en az 8 karakter olmalı.": "Password must be at least 8 characters.",
+  "Girişe dön": "Back to sign in",
+  "Farklı e-posta dene": "Try a different e-mail",
+  "SOBSO e-posta doğrulama kodun": "Your SOBSO verification code",
+  "SOBSO şifre sıfırlama kodun": "Your SOBSO password reset code",
+  "SOBSO hesabını doğrulamak için kodun:":
+    "Your code to verify your SOBSO account:",
+  "SOBSO şifreni sıfırlamak için kodun:":
+    "Your code to reset your SOBSO password:",
+  "Kod 10 dakika geçerlidir. Bu isteği sen yapmadıysan bu e-postayı yok say.":
+    "The code is valid for 10 minutes. If you didn't request this, ignore this e-mail.",
   "Bu gruba erişiminiz yok.": "You don't have access to this group.",
   "Grup bulunamadı.": "Group not found.",
   "Kullanıcı bulunamadı.": "User not found.",

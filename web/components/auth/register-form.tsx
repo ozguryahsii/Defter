@@ -49,7 +49,7 @@ export function RegisterForm() {
     toast.success(t("Hesabın hazır!"));
     // Tam sayfa yönlendirme: mobilde client-side push oturum çerezinden
     // önce koşup boş sayfada bırakabiliyor.
-    window.location.assign("/dashboard");
+    window.location.assign("/verify-email");
   }
 
   return (

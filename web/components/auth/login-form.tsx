@@ -70,7 +70,15 @@ export function LoginForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">{t("Parola")}</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">{t("Parola")}</Label>
+            <Link
+              href="/forgot"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              {t("Şifreni mi unuttun?")}
+            </Link>
+          </div>
           <PasswordInput
             id="password"
             name="password"

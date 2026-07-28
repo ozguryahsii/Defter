@@ -95,6 +95,113 @@ export async function registerUser(
     },
   });
 
+  // Doğrulama kodu gönder; e-posta hatası kaydı engellemez (tekrar istenebilir).
+  try {
+    const { issueEmailCode } = await import("./email-codes");
+    await issueEmailCode(parsed.data.email, "verify");
+  } catch (e) {
+    console.error("register: verify code send failed", e);
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// E-posta doğrulama + şifre sıfırlama
+// ---------------------------------------------------------------------------
+
+/** Oturumdaki kullanıcıya yeni doğrulama kodu gönderir. */
+export async function resendVerificationCode(): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: t("Oturum bulunamadı.") };
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, emailVerified: true },
+  });
+  if (!user?.email) return { ok: false, error: t("Hesabında kayıtlı e-posta yok.") };
+  if (user.emailVerified) return { ok: true };
+
+  const { issueEmailCode } = await import("./email-codes");
+  const res = await issueEmailCode(user.email, "verify");
+  if (res === "rate_limited")
+    return { ok: false, error: t("Çok sık kod istendi. Lütfen 1 saat sonra tekrar dene.") };
+  if (res === "send_failed")
+    return { ok: false, error: t("E-posta gönderilemedi. Lütfen daha sonra tekrar dene.") };
+  return { ok: true };
+}
+
+/** Oturumdaki kullanıcının e-postasını 6 haneli kodla doğrular. */
+export async function confirmEmailCode(code: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: t("Oturum bulunamadı.") };
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, emailVerified: true },
+  });
+  if (!user?.email) return { ok: false, error: t("Hesabında kayıtlı e-posta yok.") };
+  if (user.emailVerified) return { ok: true };
+
+  const { checkEmailCode } = await import("./email-codes");
+  const res = await checkEmailCode(user.email, "verify", code);
+  if (res === "expired")
+    return { ok: false, error: t("Kodun süresi dolmuş; yeni kod iste.") };
+  if (res === "too_many")
+    return { ok: false, error: t("Çok fazla yanlış deneme; yeni kod iste.") };
+  if (res !== "ok") return { ok: false, error: t("Kod hatalı.") };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { emailVerified: new Date() },
+  });
+  return { ok: true };
+}
+
+/** Şifre sıfırlama kodu ister. Hesap var/yok bilgisi sızdırılmaz. */
+export async function requestPasswordReset(email: string): Promise<ActionState> {
+  const parsed = z.string().trim().toLowerCase().email().safeParse(email);
+  if (!parsed.success)
+    return { ok: false, error: t("Geçerli bir e-posta adresi girin.") };
+
+  const user = await prisma.user.findUnique({ where: { email: parsed.data } });
+  if (user) {
+    const { issueEmailCode } = await import("./email-codes");
+    const res = await issueEmailCode(parsed.data, "reset");
+    if (res === "rate_limited")
+      return { ok: false, error: t("Çok sık kod istendi. Lütfen 1 saat sonra tekrar dene.") };
+  }
+  // Kayıtlı olsun olmasın aynı mesaj (hesap taraması engellenir).
+  return { ok: true };
+}
+
+/** Kod + yeni parola ile şifreyi sıfırlar. */
+export async function resetPasswordWithCode(input: {
+  email: string;
+  code: string;
+  password: string;
+}): Promise<ActionState> {
+  const email = z.string().trim().toLowerCase().email().safeParse(input.email);
+  if (!email.success)
+    return { ok: false, error: t("Geçerli bir e-posta adresi girin.") };
+  if (typeof input.password !== "string" || input.password.length < 8)
+    return { ok: false, error: t("Parola en az 8 karakter olmalı.") };
+
+  const user = await prisma.user.findUnique({ where: { email: email.data } });
+  if (!user) return { ok: false, error: t("Kod hatalı.") };
+
+  const { checkEmailCode } = await import("./email-codes");
+  const res = await checkEmailCode(email.data, "reset", input.code);
+  if (res === "expired")
+    return { ok: false, error: t("Kodun süresi dolmuş; yeni kod iste.") };
+  if (res === "too_many")
+    return { ok: false, error: t("Çok fazla yanlış deneme; yeni kod iste.") };
+  if (res !== "ok") return { ok: false, error: t("Kod hatalı.") };
+
+  const passwordHash = await bcrypt.hash(input.password, 12);
+  await prisma.user.update({
+    where: { id: user.id },
+    // Kod e-posta sahipliğini kanıtlar → e-posta da doğrulanmış sayılır.
+    data: { passwordHash, emailVerified: user.emailVerified ?? new Date() },
+  });
   return { ok: true };
 }
 
