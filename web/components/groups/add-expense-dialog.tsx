@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Loader2, Plus } from "lucide-react";
+import { Check, Loader2, Plus, ScanLine } from "lucide-react";
 import { addExpense, editExpense } from "@/lib/actions";
 import { equalShares } from "@/lib/settlement";
 import { formatCurrency } from "@/lib/format";
@@ -73,6 +73,7 @@ export function AddExpenseDialog({
   const simple = personal || isIncome;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const [description, setDescription] = useState(expense?.description ?? "");
   const [category, setCategory] = useState(expense?.category ?? "");
@@ -260,6 +261,52 @@ export function AddExpenseDialog({
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-4">
+          {!isEdit && !isIncome && (
+            <div>
+              <input
+                id="receipt-scan-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={async (ev) => {
+                  const f = ev.target.files?.[0];
+                  ev.target.value = "";
+                  if (!f) return;
+                  setScanning(true);
+                  try {
+                    const { scanReceipt } = await import("@/lib/receipt-ocr");
+                    const r = await scanReceipt(f);
+                    if (r.amount) setAmount(String(r.amount));
+                    if (r.merchant && !description) setDescription(r.merchant);
+                    if (r.amount || r.merchant)
+                      toast.success(t("Fiş okundu — kontrol edip kaydet."));
+                    else toast.error(t("Fiş okunamadı; daha net bir fotoğraf dene."));
+                  } catch {
+                    toast.error(t("Fiş okunamadı; daha net bir fotoğraf dene."));
+                  }
+                  setScanning(false);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={scanning}
+                onClick={() =>
+                  document.getElementById("receipt-scan-input")?.click()
+                }
+              >
+                {scanning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ScanLine className="h-4 w-4" />
+                )}
+                {scanning ? t("Fiş okunuyor…") : t("Fişten Doldur (beta)")}
+              </Button>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="desc">{t("Açıklama")}</Label>
             <Input

@@ -460,6 +460,11 @@ export const EN: Record<string, string> = {
     "Choose QR image(s) — multiple allowed",
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
+  "Fişten Doldur (beta)": "Fill from Receipt (beta)",
+  "Fiş okunuyor…": "Reading receipt…",
+  "Fiş okundu — kontrol edip kaydet.": "Receipt read — review and save.",
+  "Fiş okunamadı; daha net bir fotoğraf dene.":
+    "Couldn't read the receipt; try a sharper photo.",
   "Kod türü": "Code type",
   "İndirim kodu (%)": "Discount code (%)",
   "Deneme kodu (gün)": "Trial code (days)",
