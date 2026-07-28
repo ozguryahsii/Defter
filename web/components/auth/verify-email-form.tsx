@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { Loader2, MailCheck, RotateCw } from "lucide-react";
 import { confirmEmailCode, resendVerificationCode } from "@/lib/actions";
@@ -73,6 +74,15 @@ export function VerifyEmailForm() {
         {resending ? <Loader2 className="animate-spin" /> : <RotateCw />}
         {cooldown ? t("Kod gönderildi.") : t("Kodu tekrar gönder")}
       </Button>
+      <p className="pt-2 text-center text-sm text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="font-medium text-primary hover:underline"
+        >
+          {t("Çıkış yap")}
+        </button>
+      </p>
     </form>
   );
 }

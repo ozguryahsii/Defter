@@ -543,8 +543,6 @@ export const EN: Record<string, string> = {
   "Kodu tekrar gönder": "Resend code",
   "Kod gönderildi.": "Code sent.",
   "E-posta doğrulandı 🎉": "E-mail verified 🎉",
-  "E-posta adresin doğrulanmadı — doğrulamak için tıkla":
-    "Your e-mail isn't verified — tap to verify",
   "Hesabında kayıtlı e-posta yok.": "Your account has no e-mail on file.",
   "Çok sık kod istendi. Lütfen 1 saat sonra tekrar dene.":
     "Too many codes requested. Please try again in an hour.",
