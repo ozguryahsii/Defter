@@ -267,7 +267,6 @@ export function AddExpenseDialog({
                 id="receipt-scan-input"
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={async (ev) => {
                   const f = ev.target.files?.[0];
