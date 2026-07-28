@@ -56,7 +56,7 @@ export function LoginForm() {
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="username">{t("Kullanıcı adı")}</Label>
+          <Label htmlFor="username">{t("Kullanıcı adı veya e-posta")}</Label>
           <Input
             id="username"
             name="username"
@@ -64,7 +64,7 @@ export function LoginForm() {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            placeholder={t("kullaniciadi")}
+            placeholder={t("kullaniciadi veya ornek@eposta.com")}
             required
             autoFocus
           />

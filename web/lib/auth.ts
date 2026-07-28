@@ -20,14 +20,17 @@ export const authOptions: NextAuthOptions = {
         // Demo hesabı kapalı: tanıtım amaçlıydı, artık girişe izin verilmez.
         if (credentials.username.trim().toLowerCase() === "demo") return null;
 
-        // Büyük/küçük harfe duyarsız arama: mobil klavyeler ilk harfi
-        // kendiliğinden büyütebiliyor ("Demo" ≠ "demo" girişini engellemesin).
+        // Kullanıcı adı VEYA e-posta ile giriş; büyük/küçük harfe duyarsız
+        // (mobil klavyeler ilk harfi kendiliğinden büyütebiliyor).
+        const q = credentials.username.trim();
         const rows = await prisma.$queryRaw<{ id: string }[]>`
           SELECT id FROM "User"
-          WHERE LOWER(username) = LOWER(${credentials.username.trim()}) LIMIT 1`;
+          WHERE LOWER(username) = LOWER(${q})
+             OR (email IS NOT NULL AND LOWER(email) = LOWER(${q}))
+          LIMIT 1`;
         if (rows.length === 0) return null;
         const user = await prisma.user.findUnique({ where: { id: rows[0].id } });
-        if (!user) return null;
+        if (!user || user.username.toLowerCase() === "demo") return null;
 
         const ok = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!ok) return null;

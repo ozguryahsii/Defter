@@ -565,6 +565,8 @@ export const EN: Record<string, string> = {
     "Your password has been updated. You can sign in now.",
   "Parola en az 8 karakter olmalı.": "Password must be at least 8 characters.",
   "Girişe dön": "Back to sign in",
+  "Kullanıcı adı veya e-posta": "Username or e-mail",
+  "kullaniciadi veya ornek@eposta.com": "username or you@example.com",
   "Farklı e-posta dene": "Try a different e-mail",
   "SOBSO e-posta doğrulama kodun": "Your SOBSO verification code",
   "SOBSO şifre sıfırlama kodun": "Your SOBSO password reset code",
