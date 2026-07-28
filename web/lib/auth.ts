@@ -17,6 +17,9 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
+        // Demo hesabı kapalı: tanıtım amaçlıydı, artık girişe izin verilmez.
+        if (credentials.username.trim().toLowerCase() === "demo") return null;
+
         // Büyük/küçük harfe duyarsız arama: mobil klavyeler ilk harfi
         // kendiliğinden büyütebiliyor ("Demo" ≠ "demo" girişini engellemesin).
         const rows = await prisma.$queryRaw<{ id: string }[]>`

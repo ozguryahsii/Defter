@@ -34,7 +34,6 @@ export const EN: Record<string, string> = {
   // --- Giriş / kayıt ---
   "SOBSO!'ya hoş geldin": "Welcome to SOBSO!",
   "Hesabına giriş yaparak devam et": "Sign in to your account to continue",
-  "Demo hesabı:": "Demo account:",
   "Hesap oluştur": "Create an account",
   "Saniyeler içinde harcamalarını paylaşmaya başla":
     "Start splitting expenses in seconds",

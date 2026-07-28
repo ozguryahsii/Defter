@@ -25,11 +25,6 @@ export default function LoginPage() {
       </div>
 
       <LoginForm />
-
-      <div className="mt-6 rounded-xl border border-border/60 bg-secondary/30 p-3 text-center text-xs text-muted-foreground">
-        {t("Demo hesabı:")} <span className="font-medium text-foreground">demo</span> /{" "}
-        <span className="font-medium text-foreground">demo12345</span>
-      </div>
     </Card>
   );
 }
