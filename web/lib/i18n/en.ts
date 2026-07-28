@@ -460,8 +460,13 @@ export const EN: Record<string, string> = {
     "Choose QR image(s) — multiple allowed",
   "PNG, JPG veya ekran görüntüsü": "PNG, JPG or a screenshot",
   "Çözülüyor...": "Decoding...",
-  "Fişten Doldur (beta)": "Fill from Receipt (beta)",
+  "Fişi Tara": "Scan Receipt",
   "Fiş okunuyor…": "Reading receipt…",
+  "Fiş tarama Premium özelliğidir.": "Receipt scanning is a Premium feature.",
+  "Bu ayki fiş tarama hakkın doldu (100 fiş/ay). Yeni ay başında yenilenir.":
+    "You've used this month's receipt-scan quota (100 scans/month). It resets when the new month starts.",
+  "Fiş tarama şu anda kullanılamıyor.": "Receipt scanning is currently unavailable.",
+  "Geçersiz dosya.": "Invalid file.",
   "Fiş okundu — kontrol edip kaydet.": "Receipt read — review and save.",
   "Fiş okunamadı; daha net bir fotoğraf dene.":
     "Couldn't read the receipt; try a sharper photo.",

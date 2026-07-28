@@ -1,48 +1,66 @@
 "use client";
 
 /**
- * Fiş fotoğrafından tutar + mağaza adı çıkarımı (cihazda, ücretsiz).
- * Tesseract.js tarayıcıda çalışır; görüntü cihazdan çıkmaz, API maliyeti yok.
- * İleride yapay zekâ tabanlı sunucu OCR'ına geçilecek (daha isabetli).
+ * Fiş fotoğrafından tutar + para birimi + mağaza adı çıkarımı.
+ * Görüntü cihazda küçültülür (maks. 1568px — token maliyetini düşürür),
+ * sonra sunucudaki AI tabanlı OCR'a gönderilir (/api/receipt-scan).
+ * Sunucu premium + aylık kota kontrolünü yapar.
  */
-export type ReceiptScan = { merchant: string | null; amount: number | null };
+export type ReceiptScan = {
+  amount: number | null;
+  /** Fişteki para birimi (ISO kodu); okunamadıysa null. */
+  currency: string | null;
+  merchant: string | null;
+  /** Bu ay kalan tarama hakkı. */
+  remaining: number;
+};
 
-function parseAmount(text: string): number | null {
-  const lines = text.split(/\n+/);
-  const toNum = (s: string) =>
-    s.includes(",")
-      ? parseFloat(s.replace(/\./g, "").replace(",", ".")) // 1.234,56 → 1234.56
-      : parseFloat(s); // 12.34 → 12.34
-  // 1) TOPLAM/TUTAR/TOTAL geçen satırdaki sayı
-  for (const line of lines) {
-    if (/topla|tutar|total/i.test(line)) {
-      const m = line.match(/(\d{1,3}(?:\.\d{3})*,\d{2}|\d+[.,]\d{2})/);
-      if (m) return toNum(m[1]);
+const MAX_DIM = 1568;
+
+/** Büyük fotoğrafları JPEG'e küçültür; küçükse olduğu gibi döner. */
+async function downscale(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size < 1.5 * 1024 * 1024) {
+      bitmap.close();
+      return file;
     }
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    return blob ?? file;
+  } catch {
+    return file; // küçültme başarısızsa orijinali gönder
   }
-  // 2) Metindeki en büyük ondalıklı sayı (kuruşlu)
-  const all = [...text.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2}|\d+[.,]\d{2})/g)]
-    .map((m) => toNum(m[1]))
-    .filter((n) => Number.isFinite(n) && n > 0 && n < 1_000_000);
-  return all.length ? Math.max(...all) : null;
-}
-
-function parseMerchant(text: string): string | null {
-  const skip = /fiş|fis|tarih|saat|kdv|no[:.]|tel|adres|http|topkdv|\d{2}[./]\d{2}[./]\d{2}/i;
-  for (const raw of text.split(/\n+/).slice(0, 6)) {
-    const line = raw.trim();
-    if (line.length < 4 || line.length > 40) continue;
-    if (skip.test(line)) continue;
-    const letters = (line.match(/[A-Za-zÇĞİÖŞÜçğıöşü]/g) ?? []).length;
-    if (letters < line.length * 0.5) continue;
-    return line;
-  }
-  return null;
 }
 
 export async function scanReceipt(file: File): Promise<ReceiptScan> {
-  const { default: Tesseract } = await import("tesseract.js");
-  const { data } = await Tesseract.recognize(file, "tur+eng");
-  const text = data.text ?? "";
-  return { merchant: parseMerchant(text), amount: parseAmount(text) };
+  const blob = await downscale(file);
+  const form = new FormData();
+  form.append("file", blob, "receipt.jpg");
+
+  const res = await fetch("/api/receipt-scan", { method: "POST", body: form });
+  const data = (await res.json().catch(() => null)) as
+    | (ReceiptScan & { error?: string })
+    | null;
+
+  if (!res.ok || !data)
+    throw new Error(data?.error ?? "Fiş okunamadı; daha net bir fotoğraf dene.");
+
+  return {
+    amount: data.amount ?? null,
+    currency: data.currency ?? null,
+    merchant: data.merchant ?? null,
+    remaining: data.remaining ?? 0,
+  };
 }

@@ -33,6 +33,10 @@ model User {
   premiumUntil  DateTime? // subscription end (null => indefinite/manual)
   premiumSource String? // "appstore" | "playstore" | "promo" | "admin"
 
+  // AI receipt-scan quota: 100 scans per calendar month (premium only).
+  ocrUsed  Int     @default(0)
+  ocrMonth String? // "YYYY-MM" the counter belongs to; differs => reset
+
   memberships     GroupMember[]
   paidExpenses    Expense[]          @relation("Payer")
   shares          ExpenseShare[]

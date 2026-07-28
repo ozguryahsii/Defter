@@ -278,12 +278,19 @@ export function AddExpenseDialog({
                     const { scanReceipt } = await import("@/lib/receipt-ocr");
                     const r = await scanReceipt(f);
                     if (r.amount) setAmount(String(r.amount));
+                    // Fişteki para birimi olduğu gibi seçilir; grup para
+                    // birimine çevirmeyi mevcut kur sistemi yapar.
+                    if (r.currency) setEntryCurrency(r.currency);
                     if (r.merchant && !description) setDescription(r.merchant);
-                    if (r.amount || r.merchant)
-                      toast.success(t("Fiş okundu — kontrol edip kaydet."));
-                    else toast.error(t("Fiş okunamadı; daha net bir fotoğraf dene."));
-                  } catch {
-                    toast.error(t("Fiş okunamadı; daha net bir fotoğraf dene."));
+                    toast.success(t("Fiş okundu — kontrol edip kaydet."));
+                  } catch (err) {
+                    toast.error(
+                      t(
+                        err instanceof Error && err.message
+                          ? err.message
+                          : "Fiş okunamadı; daha net bir fotoğraf dene.",
+                      ),
+                    );
                   }
                   setScanning(false);
                 }}
@@ -303,7 +310,7 @@ export function AddExpenseDialog({
                 ) : (
                   <ScanLine className="h-4 w-4" />
                 )}
-                {scanning ? t("Fiş okunuyor…") : t("Fişten Doldur (beta)")}
+                {scanning ? t("Fiş okunuyor…") : t("Fişi Tara")}
               </Button>
             </div>
           )}
