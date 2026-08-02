@@ -1,9 +1,11 @@
-# SOBSO! — iOS (Capacitor)
+# SOBSO! — iOS + Android (Capacitor)
 
-Bu klasör, SOBSO! web uygulamasını iPhone/iPad'de native uygulama olarak
-çalıştıran Capacitor kabuğudur. Uygulama içeriği `capacitor.config.ts`
-içindeki `server.url` adresinden yüklenir — yani native kabuk, çalışan bir
-SOBSO sunucusuna bağlanır.
+Bu klasör, SOBSO! web uygulamasını iPhone/iPad ve Android cihazlarda native
+uygulama olarak çalıştıran Capacitor kabuğudur. Uygulama içeriği
+`capacitor.config.ts` içindeki `server.url` adresinden yüklenir — yani native
+kabuk, çalışan bir SOBSO sunucusuna bağlanır.
+
+Android kurulumu için aşağıdaki **Android (Google Play)** bölümüne bak.
 
 ## Mac'te ilk kurulum (bir kez)
 
@@ -83,3 +85,91 @@ Ayrıca markete göndermeden önce `ios/App/App/Info.plist` içindeki
   değişikliğinden sonra `npx cap sync ios` çalıştır.
 - **Xcode "Signing" hatası:** Xcode → Settings → Accounts'a Apple ID ekle,
   sonra proje ayarlarında Team olarak onu seç.
+
+---
+
+# Android (Google Play)
+
+## Gerekenler (bir kez)
+
+**Android Studio** kur (https://developer.android.com/studio). Kurulum
+sihirbazı Android SDK'yı ve JDK'yı da getirir; ayrıca bir şey kurmana
+gerek yok.
+
+## Emülatörde test
+
+Android emülatörü (BlueStacks dahil) **Mac'in `localhost` adresini
+göremez** — kendi sanal makinesidir. Bu yüzden Android'de sunucu adresini
+açıkça vermek gerekir. İki seçenek:
+
+**A) Canlı sunucuya bağlan (en kolay, önerilen):**
+```bash
+cd Defter/mobile
+CAP_SERVER_URL=https://sobso.net npx cap sync android
+npx cap open android
+```
+
+**B) Mac'teki geliştirme sunucusuna bağlan:**
+```bash
+# 1) Mac'in LAN IP'sini öğren
+ipconfig getifaddr en0            # örn. 192.168.1.20
+
+# 2) Web'i dışa açık başlat (ayrı terminalde)
+cd Defter/web && npm run dev -- -H 0.0.0.0
+
+# 3) Kabuğu o adrese bağla
+cd Defter/mobile
+CAP_SERVER_URL=http://192.168.1.20:3333 npx cap sync android
+npx cap open android
+```
+
+Android Studio açılınca üstteki cihaz listesinden bir emülatör seç ve ▶︎
+(Run) tuşuna bas.
+
+**BlueStacks kullanacaksan:** BlueStacks'i Android Studio sürmez; ona APK
+kurulur. Önce APK üret, sonra APK dosyasını BlueStacks penceresine
+sürükle-bırak:
+```bash
+cd Defter/mobile/android
+./gradlew assembleDebug
+# çıktı: android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Play Store için imza anahtarı (bir kez, ÇOK ÖNEMLİ)
+
+Google Play'e yüklenen her sürüm aynı anahtarla imzalanmalıdır. Bu anahtarı
+kaybedersen uygulamayı bir daha güncelleyemezsin — yedeğini güvenli bir
+yerde sakla (depoya KOYMA, `.gitignore` zaten engelliyor).
+
+```bash
+cd Defter/mobile/android
+keytool -genkey -v -keystore sobso-release.jks -keyalg RSA -keysize 2048 \
+  -validity 10000 -alias sobso
+```
+
+Sorulan parolayı ve bilgileri gir, sonra parolaları `keystore.properties`
+dosyasına yaz (bu dosya da depoya girmez):
+
+```bash
+cat > keystore.properties <<'EOF'
+storeFile=sobso-release.jks
+storePassword=SENIN_PAROLAN
+keyAlias=sobso
+keyPassword=SENIN_PAROLAN
+EOF
+```
+
+## Mağaza paketi (AAB) üretme
+
+Play Store `.aab` (Android App Bundle) ister, `.apk` değil.
+
+```bash
+cd Defter/mobile
+CAP_SERVER_URL=https://sobso.net npx cap sync android
+cd android && ./gradlew bundleRelease
+# çıktı: android/app/build/outputs/bundle/release/app-release.aab
+```
+
+Her yeni sürümde `android/app/build.gradle` içindeki `versionCode` bir
+artırılmalı (1 → 2 → 3 …), `versionName` ise kullanıcıya görünen sürümdür
+("1.0", "1.1" …).
