@@ -74,8 +74,31 @@ SOBSO yüklenir (simülatör, Mac'in localhost'unu görür).
 CAP_SERVER_URL=https://sobso.net npx cap sync ios
 ```
 
-Ayrıca markete göndermeden önce `ios/App/App/Info.plist` içindeki
-`NSAppTransportSecurity` bloğu (yerel http testi için eklendi) kaldırılmalı.
+`Info.plist` içindeki ATS ayarı mağaza için hazırdır: `NSAllowsArbitraryLoads`
+yerine sadece yerel ağı açan dar kapsamlı istisnalar kullanılır, canlı trafik
+https kalır. Kaldırman gereken bir şey yok.
+
+## App Store'a gönderme
+
+1. **Apple Developer Program** üyeliği gerekir ($99/yıl):
+   https://developer.apple.com/programs/ — kayıt 1-2 gün sürebilir.
+2. Xcode → proje ayarları → **Signing & Capabilities**: Team olarak
+   geliştirici hesabını seç. Bundle Identifier `net.sobso.app` olmalı.
+3. **App Store Connect**'te (https://appstoreconnect.apple.com) yeni
+   uygulama kaydı aç; aynı bundle ID'yi seç.
+4. Sunucu adresini canlıya al ve arşivle:
+   ```bash
+   cd Defter/mobile
+   CAP_SERVER_URL=https://sobso.net npx cap sync ios
+   npx cap open ios
+   ```
+   Xcode'da cihaz olarak **Any iOS Device (arm64)** seç →
+   Product → Archive → Distribute App → App Store Connect.
+5. Yükleme bitince App Store Connect'te **TestFlight** sekmesinden kendine
+   ve test kullanıcılarına dağıt; hazır olunca **App Review**'a gönder.
+
+Sürüm numaraları Xcode'da: `MARKETING_VERSION` (kullanıcıya görünen, "1.0")
+ve `CURRENT_PROJECT_VERSION` (her yüklemede artmalı: 1, 2, 3 …).
 
 ## Sık karşılaşılanlar
 

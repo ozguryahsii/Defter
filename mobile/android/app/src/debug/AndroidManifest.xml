@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Yalnızca DEBUG derlemeleri için: yerel geliştirme sunucusuna (http://<mac-ip>:3333)
+  şifresiz bağlanmaya izin verir. Release/Play Store paketi bu dosyayı içermez,
+  dolayısıyla mağaza sürümü sadece https ile konuşur.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+</manifest>

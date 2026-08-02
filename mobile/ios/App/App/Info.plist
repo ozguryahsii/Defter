@@ -24,14 +24,30 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- Yerel test (http://localhost:3000 / Mac LAN IP) için gerekli.
-	     Canlıya (https://sobso.net) geçince ve markete gönderilmeden önce
-	     bu blok kaldırılmalı. -->
+	<!-- Yerel geliştirme (http://localhost:3333 ve Mac'in LAN IP'si) için
+	     dar kapsamlı istisna. NSAllowsArbitraryLoads KULLANILMAZ: o, App
+	     Store incelemesinde gerekçe ister ve reddedilebilir. Buradaki iki
+	     anahtar yalnızca yerel ağı açar, canlı trafik https kalır. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
+		<key>NSAllowsLocalNetworking</key>
 		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
+	<!-- Fiş tarama: kullanıcı fotoğraf çekmeyi veya galeriden seçmeyi
+	     seçtiğinde iOS bu açıklamaları gösterir. Bunlar olmadan uygulama
+	     gerçek cihazda çöker ve App Store incelemesinden geçmez. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Fişlerini fotoğraflayıp tutarı otomatik doldurmak için kameraya erişim gerekiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kayıtlı fiş fotoğraflarından harcama eklemek için fotoğraflarına erişim gerekiyor.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
