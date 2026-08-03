@@ -1,14 +1,20 @@
 import { auth } from "./auth";
 
 /**
- * Yönetici, ortam değişkeniyle belirlenir (ADMIN_USERNAME). Repo herkese
- * açık olduğu için admin kimliği kodda TUTULMAZ; her sunucunun .env
- * dosyasında tanımlanır. Değişken boşsa hiç kimse admin değildir.
+ * Yöneticiler ortam değişkeniyle belirlenir (ADMIN_USERNAME). Repo herkese
+ * açık olduğu için admin kimliği kodda TUTULMAZ; her sunucunun ortamında
+ * tanımlanır. Birden çok admin için virgülle ayrılmış liste verilebilir
+ * (ör. ADMIN_USERNAME="kullanici1,kullanici2"). Tek kullanıcı adı da
+ * çalışır (geriye dönük uyumlu). Değişken boşsa hiç kimse admin değildir.
  */
 export function isAdminUsername(username?: string | null): boolean {
-  const admin = process.env.ADMIN_USERNAME?.trim().toLowerCase();
-  if (!admin || !username) return false;
-  return username.trim().toLowerCase() === admin;
+  if (!username) return false;
+  const admins = (process.env.ADMIN_USERNAME ?? "")
+    .split(",")
+    .map((u) => u.trim().toLowerCase())
+    .filter(Boolean);
+  if (admins.length === 0) return false;
+  return admins.includes(username.trim().toLowerCase());
 }
 
 /** Oturumdaki kullanıcı admin ise session döner, değilse null. */
