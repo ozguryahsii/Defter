@@ -267,6 +267,17 @@ export function PremiumScreen({
           <p className="text-center text-xs text-muted-foreground">
             {t("Abonelik otomatik yenilenir. Dilediğin zaman Ayarlar'dan iptal edebilirsin.")}
           </p>
+
+          {/* App Store Guideline 3.1.2: paywall'da Kullanım Koşulları (EULA) + Gizlilik linkleri zorunlu */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs text-muted-foreground">
+            <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+              {t("Kullanım Koşulları")}
+            </a>
+            <span aria-hidden>·</span>
+            <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+              {t("Gizlilik Politikası")}
+            </a>
+          </div>
         </>
       ) : (
         // ---------------- Web: planlar + indirim kodu ----------------
