@@ -78,6 +78,24 @@ CAP_SERVER_URL=https://sobso.net npx cap sync ios
 yerine sadece yerel ağı açan dar kapsamlı istisnalar kullanılır, canlı trafik
 https kalır. Kaldırman gereken bir şey yok.
 
+## Bildirimler
+
+Kabukta `@capacitor/local-notifications` kurulu. Uygulama açıldığında bildirim
+izni ister; izin verilince:
+
+- yeni gelen bildirimler telefonun bildirim merkezinde banner olarak çıkar,
+- kişisel bütçedeki ileri tarihli ödemeler için 2 ve 1 gün önce saat 10:00'da
+  hatırlatma planlanır — bunlar uygulama **kapalıyken de** düşer.
+
+Bunlar *yerel* (local) bildirimlerdir; cihazın kendisi gösterir, sunucudan
+gönderim yapılmaz. Uygulama tamamen kapalıyken **başka birinin** yaptığı
+işlem için bildirim göndermek (ör. "Ayşe gruba harcama ekledi") uzaktan
+gönderim gerektirir: Apple Developer üyeliği + APNs anahtarı + sunucu
+tarafında gönderim servisi. O adım henüz yapılmadı.
+
+Bildirim izni satırı iOS Ayarlar'da ancak uygulama izni **bir kez istedikten
+sonra** görünür; bu sürümden önce hiç istenmediği için satır yoktu.
+
 ## App Store'a gönderme
 
 1. **Apple Developer Program** üyeliği gerekir ($99/yıl):

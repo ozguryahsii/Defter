@@ -24,6 +24,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@capacitor/local-notifications": "^8.2.1",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-avatar": "^1.2.1",
     "@radix-ui/react-dialog": "^1.1.18",

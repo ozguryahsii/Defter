@@ -17,6 +17,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/components/i18n-provider";
 import {
+  ensureNotificationPermission,
+  isNativeApp,
+  scheduleReminders,
+  showNow,
+} from "@/lib/native-notifications";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -61,12 +67,48 @@ function relative(iso: string, t: (k: string, p?: Record<string, string | number
   return t("{n} g", { n: Math.floor(h / 24) });
 }
 
+/** Telefonda banner olarak gösterilmiş bildirimlerin kimlikleri. */
+const SEEN_KEY = "sobso_notified_ids";
+
+function readSeen(): string[] {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSeen(ids: string[]) {
+  try {
+    // Son 200 kimlik yeter; liste sonsuza kadar büyümesin.
+    localStorage.setItem(SEEN_KEY, JSON.stringify(ids.slice(-200)));
+  } catch {
+    // depolama kapalıysa önemli değil
+  }
+}
+
 export function NotificationBell() {
   const router = useRouter();
   const t = useT();
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [respondingId, setRespondingId] = useState<string | null>(null);
+
+  /** Yeni gelen okunmamış bildirimleri telefonun bildirim merkezinde göster. */
+  const surfaceNative = useCallback(async (list: Item[]) => {
+    if (!isNativeApp()) return;
+    const seen = readSeen();
+    const fresh = list.filter((n) => !n.readAt && !seen.includes(n.id));
+    if (fresh.length === 0) return;
+    if (!(await ensureNotificationPermission())) return;
+
+    // En yeniden eskiye doğru en fazla 5 tane — bildirim yağmuru olmasın.
+    for (const n of fresh.slice(0, 5)) {
+      await showNow({ seed: n.id, title: n.title, body: n.body });
+    }
+    writeSeen([...seen, ...fresh.map((n) => n.id)]);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -75,10 +117,11 @@ export function NotificationBell() {
       const data = (await res.json()) as { items: Item[]; unread: number };
       setItems(data.items);
       setUnread(data.unread);
+      void surfaceNative(data.items);
     } catch {
       // offline vs. — sessiz geç
     }
-  }, []);
+  }, [surfaceNative]);
 
   useEffect(() => {
     load();
@@ -87,6 +130,29 @@ export function NotificationBell() {
     }, 45000);
     return () => clearInterval(id);
   }, [load]);
+
+  // İleri tarihli ödemeler için yerel hatırlatmaları planla. Bunlar uygulama
+  // TAMAMEN KAPALIYKEN de düşer; sunucudan gönderim gerekmez.
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let cancelled = false;
+    (async () => {
+      if (!(await ensureNotificationPermission())) return;
+      try {
+        const res = await fetch("/api/notifications/upcoming", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          items: { seed: string; title: string; body: string; at: string }[];
+        };
+        if (!cancelled) await scheduleReminders(data.items);
+      } catch {
+        // sessiz geç — bir sonraki açılışta tekrar denenir
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onRespond(n: Item, accept: boolean) {
     let requestId: string | null = null;
