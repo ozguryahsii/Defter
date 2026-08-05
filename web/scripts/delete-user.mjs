@@ -1,9 +1,12 @@
 /**
  * Bir kullanıcıyı TÜM kayıtlarıyla veritabanından siler (geri alınamaz).
  *
+ * Düz JavaScript'tir: yalnızca `node` ve @prisma/client gerektirir, derleme
+ * ya da tsx kurulumu istemez — üretim konteynerinde de doğrudan çalışır.
+ *
  * Kullanım:
- *   npx tsx scripts/delete-user.ts <kullaniciadi|e-posta>            # önizleme
- *   npx tsx scripts/delete-user.ts <kullaniciadi|e-posta> --confirm  # sil
+ *   node scripts/delete-user.mjs <kullaniciadi|e-posta>            # önizleme
+ *   node scripts/delete-user.mjs <kullaniciadi|e-posta> --confirm  # sil
  *
  * Varsayılan olarak HİÇBİR ŞEY SİLMEZ; sadece ne silineceğini raporlar.
  * Silme işlemi tek bir transaction içinde yapılır: bir adım hata verirse
@@ -15,27 +18,28 @@
  *   (harcamaları, payları, ödeşmeleri, üyeliği) silinir. Bu, gruptaki diğer
  *   kişilerin borç tablosunu değiştirir — rapor bunu ayrıca uyarır.
  */
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
 
+const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
 
 const arg = process.argv[2];
 const CONFIRM = process.argv.includes("--confirm");
 
-function money(n: number): string {
+function money(n) {
   return n.toLocaleString("tr-TR", { minimumFractionDigits: 2 });
 }
 
 async function main() {
   if (!arg) {
     console.error(
-      "Kullanım: npx tsx scripts/delete-user.ts <kullaniciadi|e-posta> [--confirm]",
+      "Kullanım: node scripts/delete-user.mjs <kullaniciadi|e-posta> [--confirm]",
     );
     process.exit(1);
   }
 
   const needle = arg.trim().toLowerCase();
-  const rows = await prisma.$queryRaw<{ id: string }[]>`
+  const rows = await prisma.$queryRaw`
     SELECT id FROM "User"
     WHERE LOWER(username) = ${needle}
        OR (email IS NOT NULL AND LOWER(email) = ${needle})
@@ -130,7 +134,7 @@ async function main() {
 
   if (!CONFIRM) {
     console.log("ÖNİZLEME — hiçbir şey silinmedi.");
-    console.log(`Silmek için: npx tsx scripts/delete-user.ts ${arg} --confirm`);
+    console.log(`Silmek için: node scripts/delete-user.mjs ${arg} --confirm`);
     return;
   }
 
