@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n-provider";
+import { useIsIosApp } from "@/lib/use-native-platform";
 
 const PLANS = [
   { id: "monthly", name: "Aylık", price: 2.99, per: "/ay" },
@@ -49,6 +50,7 @@ export function PremiumScreen({
     ? Math.max(0, Math.ceil((new Date(premiumUntil).getTime() - Date.now()) / 86400000))
     : null;
   const t = useT();
+  const isIosApp = useIsIosApp();
   const [codeInput, setCodeInput] = useState("");
   const [applied, setApplied] = useState(initialCode);
   const [busy, setBusy] = useState(false);
@@ -149,6 +151,7 @@ export function PremiumScreen({
             ))}
           </div>
 
+          {!isIosApp && (
           <SectionCard
             title={t("İndirim kodun var mı?")}
             description={t("Influencer kodunu gir, indirimli fiyatı gör")}
@@ -180,6 +183,7 @@ export function PremiumScreen({
               </p>
             )}
           </SectionCard>
+          )}
 
           <SectionCard title={t("Premium'da neler var?")}>
             <ul className="space-y-2">
