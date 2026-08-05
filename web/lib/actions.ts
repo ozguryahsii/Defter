@@ -98,7 +98,9 @@ export async function registerUser(
   // Doğrulama kodu gönder; e-posta hatası kaydı engellemez (tekrar istenebilir).
   try {
     const { issueEmailCode } = await import("./email-codes");
-    await issueEmailCode(parsed.data.email, "verify");
+    const res = await issueEmailCode(parsed.data.email, "verify");
+    if (res !== "ok")
+      console.error(`register: verify code not sent (${res}) email=${parsed.data.email}`);
   } catch (e) {
     console.error("register: verify code send failed", e);
   }

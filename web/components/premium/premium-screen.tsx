@@ -40,6 +40,7 @@ const PLANS = [
 const PERKS = [
   "Sınırsız grup oluşturma",
   "Gruplarda sınırsız harcama",
+  "Fiş okutma — fotoğraftan harcamayı otomatik doldur",
   "Gelecek premium özelliklerine erken erişim",
 ];
 
@@ -255,12 +256,17 @@ export function PremiumScreen({
             </p>
           )}
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-1 text-sm">
+          {/* İndirim kodu: App Store Offer Code kutusunu açar — belirgin buton */}
+          <button
+            onClick={() => presentRedeemCode()}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-brand/50 bg-brand/5 px-5 py-4 text-base font-medium text-foreground transition active:scale-[0.99]"
+          >
+            <Ticket className="h-5 w-5 text-brand" /> {t("İndirim kodu kullan")}
+          </button>
+
+          <div className="flex justify-center pt-1 text-sm">
             <button onClick={onRestore} disabled={busy} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
               <RotateCcw className="h-4 w-4" /> {t("Satın alımları geri yükle")}
-            </button>
-            <button onClick={() => presentRedeemCode()} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
-              <Ticket className="h-4 w-4" /> {t("Kodu kullan")}
             </button>
           </div>
 

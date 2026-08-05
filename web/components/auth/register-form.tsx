@@ -86,7 +86,7 @@ export function RegisterForm() {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="displayName">{t("Görünen ad (değiştirilemez)")}</Label>
+        <Label htmlFor="displayName">{t("Ad-Soyad (değiştirilemez)")}</Label>
         <Input
           id="displayName"
           name="displayName"

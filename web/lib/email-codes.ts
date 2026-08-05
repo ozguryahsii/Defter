@@ -39,7 +39,7 @@ export async function issueEmailCode(
     where: { email, purpose, usedAt: null },
     data: { usedAt: new Date() },
   });
-  await prisma.emailCode.create({
+  const row = await prisma.emailCode.create({
     data: {
       email,
       purpose,
@@ -69,7 +69,12 @@ export async function issueEmailCode(
       <p style="color:#6b7280;font-size:13px;margin:0">${footer}</p>
     </div>`,
   });
-  return ok ? "ok" : "send_failed";
+  if (!ok) {
+    // Gönderilemeyen kod saatlik kotayı yakmasın; kullanıcı hemen tekrar deneyebilsin.
+    await prisma.emailCode.delete({ where: { id: row.id } }).catch(() => {});
+    return "send_failed";
+  }
+  return "ok";
 }
 
 export async function checkEmailCode(
