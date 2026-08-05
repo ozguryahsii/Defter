@@ -47,6 +47,24 @@ model User {
   joinReqsSent    GroupJoinRequest[] @relation("JoinReqFrom")
   joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
   codeRedemptions CodeRedemption[]
+  pushDevices     PushDevice[]
+}
+
+// A device registered for remote push (one row per app install).
+model PushDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique // APNs device token (hex) or FCM registration token
+  platform   String // "ios" | "android"
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  // Set when the provider reports the token is dead; row is deleted instead,
+  // this field only exists for debugging a failed cleanup.
+  failedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // 6-digit e-mail codes: signup verification + password reset.

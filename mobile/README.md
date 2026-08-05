@@ -87,14 +87,42 @@ izni ister; izin verilince:
 - kişisel bütçedeki ileri tarihli ödemeler için 2 ve 1 gün önce saat 10:00'da
   hatırlatma planlanır — bunlar uygulama **kapalıyken de** düşer.
 
-Bunlar *yerel* (local) bildirimlerdir; cihazın kendisi gösterir, sunucudan
-gönderim yapılmaz. Uygulama tamamen kapalıyken **başka birinin** yaptığı
-işlem için bildirim göndermek (ör. "Ayşe gruba harcama ekledi") uzaktan
-gönderim gerektirir: Apple Developer üyeliği + APNs anahtarı + sunucu
-tarafında gönderim servisi. O adım henüz yapılmadı.
+Ayrıca **uzaktan bildirim** (APNs/FCM) kurulu: uygulama açılışta cihaz
+jetonunu `/api/push/register` ile sunucuya kaydeder, sunucu da bir bildirim
+oluştuğunda (harcama eklendi, ödeşme onaylandı, gruba davet…) doğrudan
+telefona gönderir. Bu, uygulama **tamamen kapalıyken** de çalışır.
 
 Bildirim izni satırı iOS Ayarlar'da ancak uygulama izni **bir kez istedikten
 sonra** görünür; bu sürümden önce hiç istenmediği için satır yoktu.
+
+### APNs kurulumu (bir kez)
+
+1. **Anahtar üret:** Apple Developer → Certificates, Identifiers & Profiles →
+   Keys → **+** → adını yaz, **Apple Push Notifications service (APNs)**
+   kutusunu işaretle → Continue → Register → **Download**.
+   İnen `.p8` dosyası yalnızca bir kez indirilebilir, güvenli sakla.
+2. **Sunucuya ayarları gir** (`web/.env`): `APNS_KEY_ID`, `APNS_TEAM_ID`,
+   `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY`, `APNS_PRODUCTION`.
+   Ayrıntılı açıklamalar `web/.env.example` içinde.
+3. **Xcode'da yetkiyi doğrula:** proje → Signing & Capabilities sekmesinde
+   **Push Notifications** görünmeli. Depoda `App/App.entitlements` dosyası ve
+   proje ayarı hazır; Xcode bunu otomatik tanır. Görünmezse **+ Capability**
+   ile Push Notifications ekle.
+4. **Identifier'da aç:** Apple Developer → Identifiers → `net.sobso.app` →
+   Push Notifications kutusu işaretli olmalı.
+
+Önemli: Xcode'dan cihaza kurulan derlemeler **sandbox** APNs kullanır,
+TestFlight/App Store sürümleri **production** kullanır. Sunucudaki
+`APNS_PRODUCTION` değeri hangi sürümü test ettiğinle eşleşmeli — yanlış
+ortam `BadDeviceToken` hatası verir.
+
+### FCM kurulumu (Android, Play'e çıkarken)
+
+1. [console.firebase.google.com](https://console.firebase.google.com) → proje
+   oluştur → Android uygulaması ekle, paket adı `net.sobso.app`.
+2. İnen `google-services.json` dosyasını `mobile/android/app/` içine koy.
+3. Firebase → Proje ayarları → Hizmet hesapları → **Yeni özel anahtar üret**.
+   İnen JSON'un tamamını sunucuda `FCM_SERVICE_ACCOUNT` değişkenine yaz.
 
 ## App Store'a gönderme
 

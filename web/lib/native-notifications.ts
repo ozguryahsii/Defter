@@ -27,6 +27,60 @@ async function plugin() {
   return LocalNotifications;
 }
 
+/** Cihazın hangi platformda olduğunu döner ("ios" | "android" | "web"). */
+function platform(): string {
+  if (typeof window === "undefined") return "web";
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } })
+    .Capacitor;
+  return cap?.getPlatform?.() ?? "web";
+}
+
+/**
+ * Uzaktan bildirim (APNs/FCM) kaydı: izin ister, cihaz jetonunu alır ve
+ * sunucuya kaydeder. Uygulama KAPALIYKEN gelen bildirimler bu kayıt sayesinde
+ * çalışır. Yerel bildirimlerden farklıdır; ikisi birlikte kullanılır.
+ */
+export async function registerForRemotePush(): Promise<boolean> {
+  if (!isNativeApp()) return false;
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+
+    let perm = await PushNotifications.checkPermissions();
+    if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
+      perm = await PushNotifications.requestPermissions();
+    }
+    if (perm.receive !== "granted") return false;
+
+    // Jeton geldiğinde sunucuya bildir.
+    await PushNotifications.removeAllListeners();
+    await PushNotifications.addListener("registration", (t) => {
+      void fetch("/api/push/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: t.value, platform: platform() }),
+      }).catch(() => {});
+    });
+    await PushNotifications.addListener("registrationError", (e) => {
+      console.error("push kaydı başarısız:", JSON.stringify(e));
+    });
+    // Bildirime dokunulunca ilgili sayfaya git.
+    await PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (action) => {
+        const path = (action.notification.data as { path?: string })?.path;
+        if (path && typeof path === "string" && path.startsWith("/")) {
+          window.location.assign(path);
+        }
+      },
+    );
+
+    await PushNotifications.register();
+    return true;
+  } catch {
+    return false; // eklenti yoksa (eski kabuk) sessizce geç
+  }
+}
+
 /**
  * Bildirim iznini ister (iOS'ta sistem penceresi çıkar). İzin verilmişse
  * true döner. Bu çağrı yapılmadan iOS Ayarlar'da uygulamanın "Bildirimler"

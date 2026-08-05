@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { sendPushToUser, sendPushToUsers } from "./push";
 
 export type NotificationType =
   | "expense.add"
@@ -28,6 +29,14 @@ export async function notify(input: {
         meta: input.meta ? JSON.stringify(input.meta) : null,
       },
     });
+
+    // Telefona anlık bildirim — uygulama kapalıyken de düşer.
+    await sendPushToUser({
+      userId: input.userId,
+      title: input.title,
+      body: input.body,
+      path: input.groupId ? `/groups/${input.groupId}` : "/dashboard",
+    });
   } catch {
     // notifications must never break the primary action
   }
@@ -55,6 +64,13 @@ export async function notifyGroupMembers(input: {
         body: input.body ?? null,
         groupId: input.groupId,
       })),
+    });
+
+    await sendPushToUsers({
+      userIds: members.map((m) => m.userId),
+      title: input.title,
+      body: input.body,
+      path: `/groups/${input.groupId}`,
     });
   } catch {
     // best-effort

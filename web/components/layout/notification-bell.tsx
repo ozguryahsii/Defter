@@ -19,6 +19,7 @@ import { useT } from "@/components/i18n-provider";
 import {
   ensureNotificationPermission,
   isNativeApp,
+  registerForRemotePush,
   scheduleReminders,
   showNow,
 } from "@/lib/native-notifications";
@@ -130,6 +131,13 @@ export function NotificationBell() {
     }, 45000);
     return () => clearInterval(id);
   }, [load]);
+
+  // Uzaktan bildirim kaydı: cihaz jetonunu sunucuya bildirir. Uygulama
+  // kapalıyken başkasının yaptığı işlemler için bildirim bununla gelir.
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    void registerForRemotePush();
+  }, []);
 
   // İleri tarihli ödemeler için yerel hatırlatmaları planla. Bunlar uygulama
   // TAMAMEN KAPALIYKEN de düşer; sunucudan gönderim gerekmez.
