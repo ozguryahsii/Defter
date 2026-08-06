@@ -46,7 +46,7 @@ export const EN: Record<string, string> = {
   "Kullanıcı adı veya parola hatalı.": "Wrong username or password.",
   "Hoş geldin!": "Welcome!",
   "E-posta": "E-mail",
-  "Görünen ad (değiştirilemez)": "Display name (permanent)",
+  "Ad-Soyad (değiştirilemez)": "Full name (permanent)",
   "Adın Soyadın": "Your full name",
   "Grup arkadaşların seni bu adla görür; kayıt sonrası değiştirilemez.":
     "Friends see you by this name; it can't be changed after sign-up.",
@@ -564,6 +564,9 @@ export const EN: Record<string, string> = {
   "Parolan güncellendi. Şimdi giriş yapabilirsin.":
     "Your password has been updated. You can sign in now.",
   "Parola en az 8 karakter olmalı.": "Password must be at least 8 characters.",
+  "Özet para birimi": "Summary currency",
+  "Kuru alınamadığı için şu para birimindeki gruplar toplamlara katılmadı: {list}":
+    "Groups in these currencies were left out of the totals because their exchange rate is unavailable: {list}",
   "Girişe dön": "Back to sign in",
   "Kullanıcı adı veya e-posta": "Username or e-mail",
   "kullaniciadi veya ornek@eposta.com": "username or you@example.com",

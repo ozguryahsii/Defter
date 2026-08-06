@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/magic/reveal";
 import { Button } from "@/components/ui/button";
 import { CategoryDonut } from "@/components/charts/category-donut";
+import { DisplayCurrencySelect } from "@/components/dashboard/display-currency-select";
 import { getT } from "@/lib/i18n/server";
 
 export function generateMetadata(): Metadata {
@@ -32,12 +33,21 @@ export default async function DashboardPage() {
         title={t("Merhaba, {name} 👋", { name: session!.user.name ?? "" })}
         description={t("Tüm gruplarındaki harcama ve borç durumunun özeti. (Kişisel Bütçe alanındaki harcama ve gelirler bu alana yansıtılmaz.)")}
       >
-        <Button asChild variant="brand">
-          <Link href="/groups/new">
-            <Plus /> {t("Yeni Grup Ekle")}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {data.groups.length > 0 && <DisplayCurrencySelect value={cur} />}
+          <Button asChild variant="brand">
+            <Link href="/groups/new">
+              <Plus /> {t("Yeni Grup Ekle")}
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
+
+      {data.unconvertedCurrencies.length > 0 && (
+        <p className="rounded-xl border border-border/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {t("Kuru alınamadığı için şu para birimindeki gruplar toplamlara katılmadı: {list}", { list: data.unconvertedCurrencies.join(", ") })}
+        </p>
+      )}
 
       {data.groups.length === 0 ? (
         <EmptyState

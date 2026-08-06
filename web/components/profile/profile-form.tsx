@@ -43,7 +43,7 @@ export function ProfileForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="displayName">{t("Görünen ad (değiştirilemez)")}</Label>
+        <Label htmlFor="displayName">{t("Ad-Soyad (değiştirilemez)")}</Label>
         <Input
           id="displayName"
           defaultValue={initial.displayName}

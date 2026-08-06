@@ -32,6 +32,7 @@ export default async function PremiumPage() {
 
   return (
     <PremiumScreen
+      userId={session.user.id}
       premium={user.premium && (!user.premiumUntil || user.premiumUntil > new Date())}
       premiumUntil={user.premiumUntil?.toISOString() ?? null}
       plan={user.premiumPlan}

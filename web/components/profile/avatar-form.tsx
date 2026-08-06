@@ -25,10 +25,45 @@ export function AvatarForm({
   // Yükleme sonrası tarayıcı önbelleğini kırmak için avatar'ı yeniden çiz.
   const [bump, setBump] = useState(0);
 
+  /**
+   * Fotoğrafı ortadan kare olarak kırpar ve 512x512'ye küçültür. Böylece
+   * avatar hiçbir yerde ezilip bükülmez ve dosya boyutu küçük kalır.
+   * Kırpma başarısız olursa (eski tarayıcı vb.) orijinal dosya gönderilir.
+   */
+  async function toSquare(file: File): Promise<File | Blob> {
+    try {
+      const bitmap = await createImageBitmap(file, {
+        imageOrientation: "from-image",
+      }).catch(() => createImageBitmap(file));
+
+      // Kısa kenara göre ortadan kare al (merkezden çerçeveleme).
+      const side = Math.min(bitmap.width, bitmap.height);
+      const sx = (bitmap.width - side) / 2;
+      const sy = (bitmap.height - side) / 2;
+      const out = Math.min(512, side);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = out;
+      canvas.height = out;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, out, out);
+      bitmap.close();
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.9),
+      );
+      return blob ?? file;
+    } catch {
+      return file;
+    }
+  }
+
   async function onFile(file: File) {
     setBusy(true);
+    const square = await toSquare(file);
     const fd = new FormData();
-    fd.append("avatar", file);
+    fd.append("avatar", square, "avatar.jpg");
     const res = await updateAvatar(fd);
     setBusy(false);
     if (!res.ok) {

@@ -13,6 +13,7 @@ import { saveReceipt, saveAvatar } from "./uploads";
 import { materializeRecurring } from "./recurring";
 import { isCurrencyCode } from "./currencies";
 import { requireAdmin } from "./admin";
+import { normalizeUsername } from "./username";
 import { getT } from "./i18n/server";
 import { getEffectivePremium } from "./premium";
 
@@ -68,8 +69,13 @@ export async function registerUser(
   }
 
   // Case-insensitive uniqueness: "Ozgur" and "ozgur" are the same account.
+  // usernameLower Unicode farkındalıklıdır (LOWER() yalnızca ASCII çevirir).
+  const usernameLower = normalizeUsername(parsed.data.username);
   const existing = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT id FROM "User" WHERE LOWER(username) = LOWER(${parsed.data.username}) LIMIT 1`;
+    SELECT id FROM "User"
+    WHERE "usernameLower" = ${usernameLower}
+       OR LOWER(username) = LOWER(${parsed.data.username})
+    LIMIT 1`;
   if (existing.length > 0)
     return {
       ok: false,
@@ -89,6 +95,7 @@ export async function registerUser(
   await prisma.user.create({
     data: {
       username: parsed.data.username,
+      usernameLower,
       email: parsed.data.email,
       displayName: parsed.data.displayName,
       passwordHash,
@@ -98,7 +105,9 @@ export async function registerUser(
   // Doğrulama kodu gönder; e-posta hatası kaydı engellemez (tekrar istenebilir).
   try {
     const { issueEmailCode } = await import("./email-codes");
-    await issueEmailCode(parsed.data.email, "verify");
+    const res = await issueEmailCode(parsed.data.email, "verify");
+    if (res !== "ok")
+      console.error(`register: verify code not sent (${res}) email=${parsed.data.email}`);
   } catch (e) {
     console.error("register: verify code send failed", e);
   }
@@ -202,6 +211,24 @@ export async function resetPasswordWithCode(input: {
     // Kod e-posta sahipliğini kanıtlar → e-posta da doğrulanmış sayılır.
     data: { passwordHash, emailVerified: user.emailVerified ?? new Date() },
   });
+  return { ok: true };
+}
+
+/**
+ * Ana sayfadaki özet kutularının para birimini değiştirir. Grupların kendi
+ * para birimleri etkilenmez.
+ */
+export async function setDisplayCurrency(code: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: t("Oturum bulunamadı.") };
+  if (!isCurrencyCode(code))
+    return { ok: false, error: t("Geçersiz para birimi") };
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { displayCurrency: code },
+  });
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 
