@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { normalizeUsername } from "./username";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -22,15 +23,28 @@ export const authOptions: NextAuthOptions = {
 
         // Kullanıcı adı VEYA e-posta ile giriş; büyük/küçük harfe duyarsız
         // (mobil klavyeler ilk harfi kendiliğinden büyütebiliyor).
+        // usernameLower Unicode farkındalıklıdır; LOWER() yalnızca ASCII
+        // çevirdiği için Türkçe karakterli adlar orada eşleşmez.
         const q = credentials.username.trim();
+        const lower = normalizeUsername(q);
         const rows = await prisma.$queryRaw<{ id: string }[]>`
           SELECT id FROM "User"
-          WHERE LOWER(username) = LOWER(${q})
+          WHERE "usernameLower" = ${lower}
+             OR LOWER(username) = LOWER(${q})
              OR (email IS NOT NULL AND LOWER(email) = LOWER(${q}))
           LIMIT 1`;
         if (rows.length === 0) return null;
         const user = await prisma.user.findUnique({ where: { id: rows[0].id } });
         if (!user || user.username.toLowerCase() === "demo") return null;
+
+        // Eski kayıtlarda usernameLower yanlış olabilir (migration ASCII
+        // LOWER kullandı); ilk girişte sessizce düzelt.
+        const correct = normalizeUsername(user.username);
+        if (user.usernameLower !== correct) {
+          await prisma.user
+            .update({ where: { id: user.id }, data: { usernameLower: correct } })
+            .catch(() => {});
+        }
 
         const ok = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!ok) return null;

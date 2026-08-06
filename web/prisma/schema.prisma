@@ -11,6 +11,10 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
+  // Küçük harfe indirgenmiş kullanıcı adı (Unicode farkındalıklı).
+  // SQLite'ın LOWER() işlevi yalnızca ASCII çevirir; "Şükrü" → "şükrü"
+  // yapamadığı için girişte bu alan kullanılır.
+  usernameLower String? @unique
   displayName  String?
   passwordHash String
   createdAt    DateTime @default(now())
@@ -19,6 +23,10 @@ model User {
   // emailVerified will be set once the e-mail OTP flow ships.
   email         String?   @unique
   emailVerified DateTime?
+
+  // Ana sayfadaki toplamların gösterileceği para birimi. Gruplar kendi
+  // para birimlerini korur; bu yalnızca özet kutularını etkiler.
+  displayCurrency String?
 
   // Payment details for settlements (IBAN / QR).
   iban     String?

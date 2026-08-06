@@ -564,6 +564,9 @@ export const EN: Record<string, string> = {
   "Parolan güncellendi. Şimdi giriş yapabilirsin.":
     "Your password has been updated. You can sign in now.",
   "Parola en az 8 karakter olmalı.": "Password must be at least 8 characters.",
+  "Özet para birimi": "Summary currency",
+  "Kuru alınamadığı için şu para birimindeki gruplar toplamlara katılmadı: {list}":
+    "Groups in these currencies were left out of the totals because their exchange rate is unavailable: {list}",
   "Girişe dön": "Back to sign in",
   "Kullanıcı adı veya e-posta": "Username or e-mail",
   "kullaniciadi veya ornek@eposta.com": "username or you@example.com",

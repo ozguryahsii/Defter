@@ -41,7 +41,6 @@ const PERKS = [
   "Sınırsız grup oluşturma",
   "Gruplarda sınırsız harcama",
   "Fiş okutma — fotoğraftan harcamayı otomatik doldur",
-  "Gelecek premium özelliklerine erken erişim",
 ];
 
 function discounted(price: number, percent: number): string {

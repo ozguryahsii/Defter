@@ -243,7 +243,12 @@ export function AddExpenseDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      {/* onOpenAutoFocus engellenmezse Radix ilk alana odaklanır ve mobilde
+          klavye kendiliğinden açılıp ekranı kaydırır. */}
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {isEdit
@@ -325,7 +330,6 @@ export function AddExpenseDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder={isIncome ? t("Örn. Maaş") : t("Örn. Akşam yemeği")}
               required
-              autoFocus
             />
           </div>
 

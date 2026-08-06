@@ -5,6 +5,7 @@ import {
 } from "./settlement";
 import { materializeRecurring } from "./recurring";
 import { formatCurrency } from "./format";
+import { getFxRate } from "./fx";
 
 export type GroupWithData = Awaited<
   ReturnType<typeof loadUserGroups>
@@ -131,7 +132,10 @@ export type DashboardData = {
     payerName: string;
     groupName: string;
   }[];
+  /** Özet kutularının ve grafiklerin gösterildiği para birimi. */
   primaryCurrency: string;
+  /** Kuru alınamadığı için toplamlara katılamayan para birimleri. */
+  unconvertedCurrencies: string[];
 };
 
 const MONTH_LABELS = [
@@ -147,9 +151,43 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   );
   const summaries = groups.map((g) => summarize(g, userId));
 
-  const totalSpent = summaries.reduce((s, g) => s + g.total, 0);
-  const netBalance = summaries.reduce((s, g) => s + g.yourBalance, 0);
-  const primaryCurrency = groups[0]?.currency ?? "TRY";
+  // Özet kutuları TEK para biriminde gösterilir. Gruplar farklı para
+  // birimlerinde olabildiği için her tutar kullanıcının seçtiği gösterim
+  // birimine çevrilir; çevrilmeden toplanırsa (eski davranış) 50 TL ile
+  // 50 USD toplanıp anlamsız bir sonuç çıkıyordu.
+  const me = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { displayCurrency: true },
+  });
+  const primaryCurrency =
+    me?.displayCurrency ?? groups[0]?.currency ?? "TRY";
+
+  // Gruplarda geçen her para birimi için kur (aynı birim → 1).
+  const rates = new Map<string, number>([[primaryCurrency, 1]]);
+  for (const code of new Set(groups.map((g) => g.currency))) {
+    if (rates.has(code)) continue;
+    const fx = await getFxRate(code, primaryCurrency);
+    // Kur alınamazsa 1 kullanmak yanlış toplam üretir; o grubu dışarıda
+    // bırakmak yerine kuru bilinmeyen olarak işaretleriz.
+    if (fx) rates.set(code, fx.rate);
+  }
+  /** Grup para biriminden gösterim birimine çevirir. */
+  const conv = (amount: number, from: string): number => {
+    const r = rates.get(from);
+    return r === undefined ? 0 : amount * r;
+  };
+  const unconverted = [...new Set(groups.map((g) => g.currency))].filter(
+    (c) => !rates.has(c),
+  );
+
+  const totalSpent = summaries.reduce(
+    (s, g) => s + conv(g.total, g.currency),
+    0,
+  );
+  const netBalance = summaries.reduce(
+    (s, g) => s + conv(g.yourBalance, g.currency),
+    0,
+  );
 
   let youPaid = 0;
   let pendingSettlements = 0;
@@ -200,7 +238,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }
     for (const t of settlement.transfers) {
       if (t.toUserId === userId) {
-        owedToYouTotal += t.amount;
+        owedToYouTotal += conv(t.amount, g.currency);
         details.owedToYou.push({
           left: t.fromUserName,
           sub: g.name,
@@ -208,7 +246,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         });
       }
       if (t.fromUserId === userId) {
-        youOweTotal += t.amount;
+        youOweTotal += conv(t.amount, g.currency);
         details.youOwe.push({
           left: t.toUserName,
           sub: g.name,
@@ -225,17 +263,19 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }
 
     for (const e of g.expenses) {
-      if (e.payerId === userId) youPaid += e.amount;
+      // Grafikler ve toplamlar tek para biriminde olmalı.
+      const amount = conv(e.amount, g.currency);
+      if (e.payerId === userId) youPaid += amount;
 
       const cat = e.category?.trim() || "Diğer";
-      categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + e.amount);
+      categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + amount);
 
       const payerName = e.payer.displayName ?? e.payer.username;
-      memberMap.set(payerName, (memberMap.get(payerName) ?? 0) + e.amount);
+      memberMap.set(payerName, (memberMap.get(payerName) ?? 0) + amount);
 
       const d = new Date(e.date);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (monthMap.has(key)) monthMap.set(key, (monthMap.get(key) ?? 0) + e.amount);
+      if (monthMap.has(key)) monthMap.set(key, (monthMap.get(key) ?? 0) + amount);
 
       recent.push({
         id: e.id,
@@ -285,6 +325,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     memberSpend,
     recentExpenses: recent.slice(0, 6),
     primaryCurrency,
+    unconvertedCurrencies: unconverted,
   };
 }
 
