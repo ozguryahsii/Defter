@@ -48,6 +48,10 @@
 	<string>Fişlerini fotoğraflayıp tutarı otomatik doldurmak için kameraya erişim gerekiyor.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Kayıtlı fiş fotoğraflarından harcama eklemek için fotoğraflarına erişim gerekiyor.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>SOBSO! finansal verilerinizi korumak için uygulamayı Face ID ile kilitler.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
