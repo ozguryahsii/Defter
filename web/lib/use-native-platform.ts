@@ -13,3 +13,13 @@ export function useIsIosApp(): boolean {
   }, []);
   return isIos;
 }
+
+/** Uygulama Capacitor Android kabuğu içinde mi çalışıyor? (mount sonrası true olur) */
+export function useIsAndroidApp(): boolean {
+  const [isAndroid, setIsAndroid] = useState(false);
+  useEffect(() => {
+    const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
+    if (cap?.getPlatform?.() === "android") setIsAndroid(true);
+  }, []);
+  return isAndroid;
+}

@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n-provider";
-import { useIsIosApp } from "@/lib/use-native-platform";
+import { useIsIosApp, useIsAndroidApp } from "@/lib/use-native-platform";
 import {
   ensureRevenueCat,
   getPaywallPackages,
@@ -31,6 +31,9 @@ import {
 
 // Public App Store SDK anahtarı (uygulamaya gömülmek için — gizli değil).
 const RC_APPLE_KEY = "appl_QMvgTRNoeLDbPoWnMGxZPYNfJmk";
+// Public Google Play SDK anahtarı — Android Yayın Planı Faz 3'te RevenueCat'e
+// Google Play app eklenince buraya gerçek "goog_..." anahtarı yazılacak.
+const RC_GOOGLE_KEY = "";
 
 const PLANS = [
   { id: "monthly", name: "Aylık", price: 2.99, per: "/ay" },
@@ -65,6 +68,7 @@ export function PremiumScreen({
     : null;
   const t = useT();
   const isIosApp = useIsIosApp();
+  const isAndroidApp = useIsAndroidApp();
 
   // --- Web indirim kodu akışı (iOS'ta gizli) ---
   const [codeInput, setCodeInput] = useState("");
@@ -97,11 +101,15 @@ export function PremiumScreen({
   const [activating, setActivating] = useState(false);
 
   useEffect(() => {
-    if (!isIosApp || premium) return;
+    if (premium) return;
+    // iOS'ta davranış birebir aynı kalır (RC_APPLE_KEY); Android'de RC_GOOGLE_KEY
+    // doldurulana kadar (Android Yayın Planı Faz 3) hiçbir şey yapmaz.
+    const apiKey = isIosApp ? RC_APPLE_KEY : isAndroidApp ? RC_GOOGLE_KEY : null;
+    if (!apiKey) return;
     let cancelled = false;
     (async () => {
       try {
-        await ensureRevenueCat(RC_APPLE_KEY, userId);
+        await ensureRevenueCat(apiKey, userId);
         const pkgs = await getPaywallPackages();
         if (!cancelled) setPackages(pkgs);
       } catch {
@@ -111,7 +119,7 @@ export function PremiumScreen({
     return () => {
       cancelled = true;
     };
-  }, [isIosApp, premium, userId]);
+  }, [isIosApp, isAndroidApp, premium, userId]);
 
   // Satın alma sonrası: sunucu premium'u webhook ile birkaç saniyede günceller.
   const finishActivation = useCallback(() => {
@@ -274,6 +282,94 @@ export function PremiumScreen({
           </p>
 
           {/* App Store Guideline 3.1.2: paywall'da Kullanım Koşulları (EULA) + Gizlilik linkleri zorunlu */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs text-muted-foreground">
+            <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+              {t("Kullanım Koşulları")}
+            </a>
+            <span aria-hidden>·</span>
+            <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+              {t("Gizlilik Politikası")}
+            </a>
+          </div>
+        </>
+      ) : isAndroidApp ? (
+        // ---------------- Android: gerçek In-App Purchase paywall (Google Play Billing) ----------------
+        <>
+          <SectionCard title={t("Premium'da neler var?")}>
+            <ul className="space-y-2">
+              {PERKS.map((p) => (
+                <li key={p} className="flex items-center gap-2 text-sm">
+                  <Sparkles className="h-4 w-4 text-brand" /> {t(p)}
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+
+          {packages === null ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : packages.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">
+              {t("Abonelik şu an yüklenemedi. Lütfen daha sonra tekrar dene.")}
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(["yearly", "monthly"] as const).map((period) => {
+                const pkg = packages.find((x) => x.period === period);
+                if (!pkg) return null;
+                const isYear = period === "yearly";
+                return (
+                  <button
+                    key={pkg.identifier}
+                    onClick={() => onSubscribe(pkg)}
+                    disabled={!!purchasing || activating}
+                    className={cn(
+                      "relative rounded-2xl border p-5 text-left transition active:scale-[0.99]",
+                      isYear ? "border-brand/50 bg-brand/5" : "border-border/60 bg-card/40",
+                    )}
+                  >
+                    {isYear && (
+                      <Badge variant="brand" className="absolute -top-2.5 right-4 text-[10px]">
+                        {t("En avantajlı")}
+                      </Badge>
+                    )}
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {isYear ? t("Yıllık") : t("Aylık")}
+                    </p>
+                    <p className="mt-1.5 text-2xl font-semibold">{priceOf(period)}</p>
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand">
+                      {purchasing === pkg.identifier ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Crown className="h-4 w-4" />
+                      )}
+                      {t("Abone ol")}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {activating && (
+            <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("Premium aktifleşiyor…")}
+            </p>
+          )}
+
+          {/* Play Store'da uygulama içi kod kullanımı promosyon kodları için ayrı bir akıştır
+              (Play Store uygulaması üzerinden), bu yüzden burada gösterilmiyor. */}
+          <div className="flex justify-center pt-1 text-sm">
+            <button onClick={onRestore} disabled={busy} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+              <RotateCcw className="h-4 w-4" /> {t("Satın alımları geri yükle")}
+            </button>
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground">
+            {t("Abonelik otomatik yenilenir. Dilediğin zaman Play Store'dan iptal edebilirsin.")}
+          </p>
+
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-xs text-muted-foreground">
             <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
               {t("Kullanım Koşulları")}
