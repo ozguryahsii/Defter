@@ -38,4 +38,17 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Fiş fotoğrafı: kamera ile çekim -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Fiş fotoğrafı: galeriden seçim (Android 13+ ve öncesi için ayrı izinler) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Push + yerel bildirimler (Android 13+ şart koşuyor) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- İleri tarihli ödeme hatırlatmalarının tam zamanında çalışması için -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Kamerasız cihazlarda (ör. bazı tabletler) Play Store uygulamayı filtrelemesin -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>
