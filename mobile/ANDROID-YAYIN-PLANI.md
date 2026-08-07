@@ -82,15 +82,18 @@ sdk.dir=/Users/<kullanıcı>/Library/Android/sdk
 
 ## Faz 2 — Firebase + Push (FCM)
 
-- [Firebase Console](https://console.firebase.google.com)'da proje oluştur,
-  Android app olarak `net.sobso.app`'i ekle
-- İnen `google-services.json`'ı `mobile/android/app/` klasörüne koy
-  (`.gitignore`'da olmalı — sunucudaki gibi hassas dosya, repoya girmez)
-- Not: sunucu tarafı zaten hazır (`web/lib/push/fcm.ts`, `FCM_SERVICE_ACCOUNT`
-  env) — sadece client tarafı bağlanacak
-- Gerçek cihazda (ya da emulator'da — Android'de push simülatörde de
+- [x] [Firebase Console](https://console.firebase.google.com)'da proje
+  oluşturuldu ("Sobso", Spark/ücretsiz plan, proje id `sobso-b09a1`)
+- [x] Android app `net.sobso.app` olarak eklendi
+- [x] `google-services.json` indirilip `mobile/android/app/` klasörüne
+  kondu (`.gitignore`'da — sunucudaki gibi hassas dosya, repoya girmedi)
+- [x] `./gradlew assembleDebug` ile doğrulandı — google-services eklentisi
+  sorunsuz devreye girdi, **BUILD SUCCESSFUL**
+- [ ] Gerçek cihazda (ya da emulator'da — Android'de push simülatörde de
   çalışır, iOS'un aksine) push kaydını test et: izin iste → token al →
   `/api/push/register`'a gitti mi doğrula
+- Not: sunucu tarafı zaten hazır (`web/lib/push/fcm.ts`, `FCM_SERVICE_ACCOUNT`
+  env) — sadece client tarafı bağlandı
 
 ## Faz 3 — RevenueCat + Google Play Billing
 
