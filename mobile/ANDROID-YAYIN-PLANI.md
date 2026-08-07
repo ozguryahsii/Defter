@@ -89,9 +89,11 @@ sdk.dir=/Users/<kullanıcı>/Library/Android/sdk
   kondu (`.gitignore`'da — sunucudaki gibi hassas dosya, repoya girmedi)
 - [x] `./gradlew assembleDebug` ile doğrulandı — google-services eklentisi
   sorunsuz devreye girdi, **BUILD SUCCESSFUL**
-- [ ] Gerçek cihazda (ya da emulator'da — Android'de push simülatörde de
-  çalışır, iOS'un aksine) push kaydını test et: izin iste → token al →
-  `/api/push/register`'a gitti mi doğrula
+- [x] Emulator'da (Sobso AVD) push kaydı uçtan uca test edildi: izin istendi →
+  gerçek FCM token alındı → `/api/push/register`'a gitti → sunucudaki
+  `pushDevice` tablosunda `android` platformuyla kayıtlı görüldü.
+  **iOS'taki AppDelegate köprüsü sorunu Android'de hiç yaşanmadı** — plugin
+  ekstra native kod olmadan, dokümantasyondaki gibi sorunsuz çalıştı.
 - Not: sunucu tarafı zaten hazır (`web/lib/push/fcm.ts`, `FCM_SERVICE_ACCOUNT`
   env) — sadece client tarafı bağlandı
 
