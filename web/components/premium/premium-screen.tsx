@@ -31,9 +31,8 @@ import {
 
 // Public App Store SDK anahtarı (uygulamaya gömülmek için — gizli değil).
 const RC_APPLE_KEY = "appl_QMvgTRNoeLDbPoWnMGxZPYNfJmk";
-// Public Google Play SDK anahtarı — Android Yayın Planı Faz 3'te RevenueCat'e
-// Google Play app eklenince buraya gerçek "goog_..." anahtarı yazılacak.
-const RC_GOOGLE_KEY = "";
+// Public Google Play SDK anahtarı (uygulamaya gömülmek için — gizli değil).
+const RC_GOOGLE_KEY = "goog_ljPlOoempEDKPsqvhoTrzSEnUSn";
 
 const PLANS = [
   { id: "monthly", name: "Aylık", price: 2.99, per: "/ay" },
