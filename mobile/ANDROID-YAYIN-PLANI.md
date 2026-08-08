@@ -45,30 +45,57 @@ kapsar.
   işlemcisine göre Apple Silicon / Intel seç)
 - "Standard" kurulum yeterli — SDK ve JDK'yı otomatik getirir
 
-## Faz 1 — Kod düzeltmeleri
+## Faz 1 — Kod düzeltmeleri ✅ TAMAMLANDI
 
-- `colors.xml` oluştur (SOBSO renkleriyle: mor `#6C63FF`, koyu arka plan `#09090b`)
-- `splash.png`'leri SOBSO markasıyla değiştir (tüm yoğunluk varyantları:
-  mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi × port/land + universal)
-- `AndroidManifest.xml`'e izinleri ekle: `CAMERA`, `READ_MEDIA_IMAGES`
+- [x] `colors.xml` oluşturuldu (SOBSO renkleriyle: mor `#6C63FF`, koyu arka plan `#09090b`)
+- [x] `splash.png`'ler SOBSO markasıyla değiştirildi (tüm yoğunluk varyantları:
+  mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi × port/land + universal — `logo.png`'den üretildi)
+- [x] `AndroidManifest.xml`'e izinler eklendi: `CAMERA`, `READ_MEDIA_IMAGES`
   (Android 13+) / `READ_EXTERNAL_STORAGE` (eski sürümler), `POST_NOTIFICATIONS`
   (Android 13+, push+local bildirim için), `SCHEDULE_EXACT_ALARM` (hatırlatma
-  bildirimleri tam zamanında çalışsın diye)
-- `use-native-platform.ts`'i Android'i de tanıyacak şekilde genişlet
-- `premium-screen.tsx`'e Android IAP dalını ekle (RevenueCat Google Play
-  SDK key'i Faz 3'te alınınca doldurulacak)
+  bildirimleri tam zamanında çalışsın diye) + kamera `uses-feature` (required=false)
+- [x] `use-native-platform.ts`'e `useIsAndroidApp()` eklendi (mevcut
+  `useIsIosApp()`'a dokunulmadı)
+- [x] `premium-screen.tsx`'e Android IAP dalı eklendi (`RC_GOOGLE_KEY` şimdilik
+  boş — Faz 3'te doldurulacak; o zamana kadar Android'de native satın alma
+  sessizce devre dışı, hata vermez)
+- [x] **`./gradlew assembleDebug` ile derleme doğrulandı — BUILD SUCCESSFUL**
+  (3 native eklenti dahil: local-notifications, push-notifications, RevenueCat)
+
+### Build araçları notu (önemli)
+
+Android Studio'nun kendi paketlediği JBR (JetBrains Runtime, şu an JDK 25)
+Gradle 8.14.3 ile **uyumsuz** (`Unsupported class file major version 69`
+hatası verir). Capacitor 8'in Android modülü ise **JDK 21** kaynak
+uyumluluğu istiyor, JDK 17 yetmiyor (`invalid source release: 21`).
+Yani `./gradlew` komutlarını çalıştırmadan önce:
+
+```bash
+brew install openjdk@21   # bir kerelik
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+```
+
+`android/local.properties` dosyasında da SDK yolu tanımlı olmalı:
+```
+sdk.dir=/Users/<kullanıcı>/Library/Android/sdk
+```
 
 ## Faz 2 — Firebase + Push (FCM)
 
-- [Firebase Console](https://console.firebase.google.com)'da proje oluştur,
-  Android app olarak `net.sobso.app`'i ekle
-- İnen `google-services.json`'ı `mobile/android/app/` klasörüne koy
-  (`.gitignore`'da olmalı — sunucudaki gibi hassas dosya, repoya girmez)
+- [x] [Firebase Console](https://console.firebase.google.com)'da proje
+  oluşturuldu ("Sobso", Spark/ücretsiz plan, proje id `sobso-b09a1`)
+- [x] Android app `net.sobso.app` olarak eklendi
+- [x] `google-services.json` indirilip `mobile/android/app/` klasörüne
+  kondu (`.gitignore`'da — sunucudaki gibi hassas dosya, repoya girmedi)
+- [x] `./gradlew assembleDebug` ile doğrulandı — google-services eklentisi
+  sorunsuz devreye girdi, **BUILD SUCCESSFUL**
+- [x] Emulator'da (Sobso AVD) push kaydı uçtan uca test edildi: izin istendi →
+  gerçek FCM token alındı → `/api/push/register`'a gitti → sunucudaki
+  `pushDevice` tablosunda `android` platformuyla kayıtlı görüldü.
+  **iOS'taki AppDelegate köprüsü sorunu Android'de hiç yaşanmadı** — plugin
+  ekstra native kod olmadan, dokümantasyondaki gibi sorunsuz çalıştı.
 - Not: sunucu tarafı zaten hazır (`web/lib/push/fcm.ts`, `FCM_SERVICE_ACCOUNT`
-  env) — sadece client tarafı bağlanacak
-- Gerçek cihazda (ya da emulator'da — Android'de push simülatörde de
-  çalışır, iOS'un aksine) push kaydını test et: izin iste → token al →
-  `/api/push/register`'a gitti mi doğrula
+  env) — sadece client tarafı bağlandı
 
 ## Faz 3 — RevenueCat + Google Play Billing
 
