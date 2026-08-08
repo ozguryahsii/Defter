@@ -97,43 +97,103 @@ sdk.dir=/Users/<kullanıcı>/Library/Android/sdk
 - Not: sunucu tarafı zaten hazır (`web/lib/push/fcm.ts`, `FCM_SERVICE_ACCOUNT`
   env) — sadece client tarafı bağlandı
 
-## Faz 3 — RevenueCat + Google Play Billing
+## Faz 3 — RevenueCat + Google Play Billing ✅ TAMAMLANDI
 
-- RevenueCat dashboard → SOBSO projesine **Google Play** app'i ekle
-- Play Console → Setup → API access: Google Cloud servis hesabı oluştur,
-  RevenueCat'e bağla (satın alma doğrulaması ve real-time developer
-  notifications için gerekli)
-- Play Console'da 2 abonelik ürünü oluştur (App Store'daki gibi: aylık
-  $2.99, yıllık $24.99 — product ID'ler `net.sobso.premium.monthly` /
-  `.yearly` ile tutarlı tutulabilir)
-- RevenueCat'te Android paketlerini mevcut "Sobso Pro" entitlement'ına bağla
-- `premium-screen.tsx`'teki Android SDK key'ini gerçek değerle doldur
+- [x] RevenueCat dashboard'a Google Play app'i eklendi ("Sobso (Play Store)")
+- [x] Google Cloud'da servis hesabı oluşturuldu, Play Console → Kullanıcılar
+  ve izinler'den yetkilendirildi (eski "API access" sayfası artık yok, bu
+  akış üzerinden yapıldı) — "Valid credentials" ✅ doğrulandı (paket adı
+  doğrulaması için önce bir AAB'nin bir test track'ine yüklenmiş olması
+  gerekiyor, bu yüzden Faz 4 ile birlikte tamamlandı)
+- [x] Play Console'da 2 abonelik oluşturuldu: `net.sobso.premium.monthly`
+  (₺169,99/ay) ve `net.sobso.premium.yearly` — Google Payments satıcı hesabı
+  önce kuruldu (Apple'daki W-8BEN sürecine benzer, kullanıcı tarafından
+  tamamlandı)
+- [x] Ürünler RevenueCat'e "Import Products" ile içe aktarıldı, mevcut
+  "Sobso Pro" entitlement'ına bağlandı (iOS ile ortak entitlement)
+- [x] "default" offering'in Monthly/Yearly paketlerine Android ürünleri
+  eklendi (iOS ürünleriyle birlikte, tek offering iki platformu da besliyor)
+- [x] `premium-screen.tsx`'teki `RC_GOOGLE_KEY` gerçek Android SDK key'iyle
+  (`goog_...`) dolduruldu, deploy edildi
+- [x] **Uçtan uca sandbox satın alma testi başarılı** — Play Console
+  License testing listesine test hesabı eklendi, gerçek cihazda "Test:
+  SOBSO Premium Monthly" siparişi (₺0 gerçek tahsilat) tamamlandı,
+  RevenueCat Sandbox sekmesinde müşteri olarak göründü, uygulamada premium
+  anında aktifleşti
 
-## Faz 4 — İmzalama + ilk build
+### Ders — Android'e özgü zorluklar
 
-- Release keystore oluştur (`keytool`), **parolaları güvenli bir yerde sakla**
-  — kaybolursa uygulamayı aynı kimlikle güncelleyemezsin (Play App Signing'e
-  kayıtlıysan Google desteğiyle kurtarılabilir)
-- `keystore.properties` doldur (repoya girmez, `.gitignore`'da zaten var)
-- İlk internal test build'ini al (`./gradlew bundleRelease` ya da
-  `assembleRelease`), gerçek cihazda çalıştır
+- Play Console'un yeni sürümünde "API access" sayfası kaldırılmış; servis
+  hesabı artık Google Cloud Console'dan oluşturulup Play Console →
+  Kullanıcılar ve izinler'den davet ediliyor
+- RevenueCat, Android paket adını doğrulayabilmek için **en az bir
+  AAB'nin bir test track'ine yüklenmiş olmasını** şart koşuyor — sadece
+  RevenueCat tarafında app eklemek yetmiyor
+- Google Play Billing test satın alması için **iki ayrı liste** var:
+  Internal testing → Testers (uygulamaya erişim için) ve Setup → License
+  testing (ücretsiz test satın alması için) — ikisi de doldurulmalı,
+  birini atlamak "item not found" ya da gerçek ücretlendirme riski
+  doğuruyor
+- Yeni yüklenen bir dahili test sürümünün Google tarafından ilk incelemesi
+  (mağaza girişi eksikken bile) birkaç saat sürebiliyor; bu süreçte
+  testerlar "App not available / not invited" hatası alabiliyor —
+  sabırla beklemek dışında yapılacak bir şey yok
 
-## Faz 5 — Play Console mağaza girişi + test
+## Faz 4 — İmzalama + ilk build ✅ TAMAMLANDI
 
-- Mağaza açıklaması, ekran görüntüleri (Android'e özgü boyutlar), feature
-  graphic (1024×500), yüksek çözünürlüklü ikon (512×512)
-- İçerik derecelendirme anketi
-- Data safety formu (finansal veri, kamera/galeri, bildirim toplama)
-- Hedef kitle ve içerik
-- Gizlilik politikası linki (zaten var: `sobso.net/privacy`)
-- Internal testing track'e AAB yükle, kendi hesabını test kullanıcısı ekle
-  (Play Console → Setup → License testing)
-- Satın alma akışını test hesabıyla uçtan uca dene
+- [x] Release keystore oluşturuldu (`keytool`, PKCS12, 10000 gün geçerli,
+  alias `sobso`) — parolalar güvenli şekilde saklandı
+- [x] `keystore.properties` dolduruldu (repoya girmedi, `.gitignore`'da)
+- [x] İlk sürüm derlendi (`./gradlew bundleRelease` — BUILD SUCCESSFUL) ve
+  Play Console → Internal testing track'ine yüklendi, tam kullanıma sunuldu
+
+### Ders — keystore & JDK
+
+- PKCS12 formatında store ve key parolası **aynı olmak zorunda**
+  (`keytool` bunu dayatıyor), eski JKS formatının aksine
+- `keystore.properties`'teki `storeFile` yolu, `app/build.gradle`'ın
+  `file()` çağrısı zaten `app/` dizinine göre çözdüğü için **`app/`
+  öneki almadan** yazılmalı (`storeFile=sobso-release.keystore`, değil
+  `storeFile=app/sobso-release.keystore`) — aksi halde yol iki kere
+  eklenip `app/app/...` diye aranıyor
+
+## Faz 5 — Play Console mağaza girişi + test ✅ TAMAMLANDI
+
+- [x] Mağaza açıklaması (kısa + tam), uygulama adı, kategori (Finans) ve
+  etiket (Kişisel finans) yazıldı
+- [x] Uygulama simgesi (512×512) ve özellik grafiği (1024×500) `logo.png`
+  kaynağından üretildi
+- [x] Telefon (5 adet, 9:16'ya kırpılmış) ve tablet (7"/10", iOS
+  setinden yeniden kullanılmış) ekran görüntüleri yüklendi
+- [x] İçerik derecelendirme anketi dolduruldu ("Diğer Tüm Uygulama
+  Türleri", UGC var ama şiddet/cinsellik/kumar yok, etkileşim davetli
+  arkadaşlarla sınırlı)
+- [x] Data safety formu tek tek dolduruldu: e-posta/ad/kullanıcı kimliği,
+  finansal bilgiler (satın alma geçmişi + diğer finansal veri), fotoğraf
+  (fiş OCR), cihaz kimliği (FCM push token) — hepsi "toplandı", hiçbiri
+  3. tarafla "paylaşılmadı" (Anthropic/RevenueCat/Resend birer hizmet
+  sağlayıcı, ayrı paylaşım sayılmıyor)
+- [x] Hedef kitle: yalnızca 18 yaş ve üstü (finansal uygulama olduğu için
+  "Designed for Families" kapsamı dışında tutuldu)
+- [x] Hesap silme linki: `sobso.net/privacy` (uygulama içi "Profil >
+  Hesabımı sil" adımını açıklıyor)
+- [x] Oturum açma bilgileri: SOBSO'da giriş şifre ile yapıldığından (OTP
+  sadece kayıt/şifre sıfırlamada tek seferlik), incelemeci için normal
+  e-posta+şifre test hesabı verildi — ayrı bir statik OTP bypass'ı
+  gerekmedi
+- [x] License testing + Internal testing tester listeleri dolduruldu,
+  satın alma akışı gerçek cihazda uçtan uca test edildi (bkz. Faz 3)
 
 ## Faz 6 — Production'a gönder
 
-- Internal test sorunsuzsa production track'e terfi ettir
-- Google incelemesini bekle (genelde Apple'dan daha hızlı — saatler/birkaç gün)
+- [ ] Play Console'daki ödeme profili doğrulaması bekleniyor (banka hesabına
+  gönderilen küçük doğrulama tutarının onaylanması gerekiyor — 2026-08-07
+  akşamı başlatıldı, birkaç iş günü sürebilir)
+- [ ] "Kapalı test" (Closed testing) kanalı — yeni geliştirici hesapları
+  için Google'ın zorunlu tuttuğu en az 12 test kullanıcısı + 14 gün şartı,
+  production'a geçmeden önce tamamlanmalı
+- [ ] Internal test sorunsuzsa production track'e terfi ettir
+- [ ] Google incelemesini bekle (genelde Apple'dan daha hızlı — saatler/birkaç gün)
 
 ---
 
