@@ -2,17 +2,17 @@
  * E-postasını doğrulamamış kullanıcıları listeler ve (istenirse) toplu siler.
  *
  * Kullanım:
- *   node scripts/cleanup-unverified.mjs                      # listele (7+ günlük)
+ *   node scripts/cleanup-unverified.mjs                      # hepsini listele
+ *   node scripts/cleanup-unverified.mjs --confirm            # hepsini sil
  *   node scripts/cleanup-unverified.mjs --days=3             # 3+ günlük olanlar
- *   node scripts/cleanup-unverified.mjs --days=3 --confirm   # sil
- *   node scripts/cleanup-unverified.mjs --all                # yaş filtresi yok
+ *   node scripts/cleanup-unverified.mjs --days=3 --confirm   # 3+ günlükleri sil
  *
  * Varsayılan olarak HİÇBİR ŞEY SİLMEZ; sadece listeler.
  *
  * Güvenlik kuralları:
- * - Yalnızca kaydından bu yana --days günden fazla geçmiş hesaplar listelenir.
- *   Yeni kayıt olmuş biri doğrulamaya fırsat bulamamış olabilir; onu silmek
- *   gerçek kullanıcıyı kaybettirir. Varsayılan 7 gündür.
+ * - Varsayılanda yaş filtresi YOKTUR; liste silmeden önce gözden geçirilir.
+ *   Yeni kaydolmuş kullanıcıları korumak istersen --days=N ile daralt
+ *   (ör. --days=1: bugün kaydolanlar listeye girmez).
  * - ADMIN_USERNAME'de tanımlı yöneticiler ASLA silinmez.
  * - E-postası olmayan eski/örnek hesaplar kapsam dışıdır (onlarda
  *   doğrulanacak bir adres yok, "doğrulamamış" sayılmazlar).
@@ -27,9 +27,9 @@ const prisma = new PrismaClient();
 
 const args = process.argv.slice(2);
 const CONFIRM = args.includes("--confirm");
-const ALL = args.includes("--all");
 const daysArg = args.find((a) => a.startsWith("--days="));
-const DAYS = daysArg ? Number(daysArg.split("=")[1]) : 7;
+// Yaş filtresi yalnızca --days verilirse uygulanır.
+const DAYS = daysArg ? Number(daysArg.split("=")[1]) : null;
 
 function adminNames() {
   return (process.env.ADMIN_USERNAME ?? "")
@@ -43,19 +43,20 @@ function ageDays(d) {
 }
 
 async function main() {
-  if (!ALL && (!Number.isFinite(DAYS) || DAYS < 0)) {
+  if (DAYS !== null && (!Number.isFinite(DAYS) || DAYS < 0)) {
     console.error("--days sayı olmalı, örn: --days=3");
     process.exit(1);
   }
 
   const admins = adminNames();
-  const cutoff = new Date(Date.now() - DAYS * 86400000);
 
   const users = await prisma.user.findMany({
     where: {
       emailVerified: null,
       email: { not: null }, // doğrulanacak adresi olmayanlar kapsam dışı
-      ...(ALL ? {} : { createdAt: { lt: cutoff } }),
+      ...(DAYS === null
+        ? {}
+        : { createdAt: { lt: new Date(Date.now() - DAYS * 86400000) } }),
     },
     orderBy: { createdAt: "asc" },
     select: {
@@ -75,8 +76,8 @@ async function main() {
 
   console.log("─".repeat(72));
   console.log(
-    ALL
-      ? "DOĞRULANMAMIŞ HESAPLAR (yaş filtresi yok)"
+    DAYS === null
+      ? "DOĞRULANMAMIŞ HESAPLAR (tümü)"
       : `DOĞRULANMAMIŞ HESAPLAR (kaydından bu yana ${DAYS}+ gün geçmiş)`,
   );
   console.log("─".repeat(72));
@@ -119,7 +120,7 @@ async function main() {
     console.log("");
     console.log("ÖNİZLEME — hiçbir şey silinmedi.");
     console.log(
-      `Silmek için: node scripts/cleanup-unverified.mjs${daysArg ? " " + daysArg : ""}${ALL ? " --all" : ""} --confirm`,
+      `Silmek için: node scripts/cleanup-unverified.mjs${daysArg ? " " + daysArg : ""} --confirm`,
     );
     return;
   }
