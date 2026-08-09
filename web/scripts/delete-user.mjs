@@ -19,6 +19,7 @@
  *   kişilerin borç tablosunu değiştirir — rapor bunu ayrıca uyarır.
  */
 import pkg from "@prisma/client";
+import { deleteUserCompletely } from "./user-delete-core.mjs";
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
@@ -138,37 +139,7 @@ async function main() {
     return;
   }
 
-  // --- Silme: bağımlılık sırasına göre, tek transaction ---
-  await prisma.$transaction(async (tx) => {
-    // 1) Tek üyeli gruplar: grup silinince harcama/pay/ödeşme/aktivite
-    //    şema gereği zincirleme (cascade) silinir.
-    if (soloGroupIds.length) {
-      await tx.group.deleteMany({ where: { id: { in: soloGroupIds } } });
-    }
-
-    // 2) Paylaşımlı gruplardaki kişisel kayıtlar
-    await tx.expenseShare.deleteMany({ where: { userId } });
-    await tx.settlement.deleteMany({
-      where: { OR: [{ fromUserId: userId }, { toUserId: userId }] },
-    });
-    // Kullanıcının ödediği harcamalar (payları cascade ile gider)
-    await tx.expense.deleteMany({ where: { payerId: userId } });
-    await tx.activity.deleteMany({ where: { actorId: userId } });
-    await tx.groupMember.deleteMany({ where: { userId } });
-
-    // 3) Kullanıcıya bağlı diğer kayıtlar
-    await tx.notification.deleteMany({ where: { userId } });
-    await tx.codeRedemption.deleteMany({ where: { userId } });
-    await tx.groupJoinRequest.deleteMany({
-      where: { OR: [{ fromUserId: userId }, { toUserId: userId }] },
-    });
-    await tx.userAddBlock.deleteMany({
-      where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
-    });
-
-    // 4) Kullanıcının kendisi
-    await tx.user.delete({ where: { id: userId } });
-  });
+  await deleteUserCompletely(prisma, userId, soloGroupIds);
 
   console.log(`✓ '${user.username}' ve tüm kayıtları silindi.`);
 }
