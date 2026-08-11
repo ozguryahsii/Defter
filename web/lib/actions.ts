@@ -311,7 +311,9 @@ export async function addMember(
   const name = username.trim();
   if (!name) return { ok: false, error: t("Kullanıcı adı boş olamaz.") };
 
-  const user = await prisma.user.findUnique({ where: { username: name } });
+  const user = await prisma.user.findUnique({
+    where: { usernameLower: normalizeUsername(name) },
+  });
   if (!user) return { ok: false, error: t("'{name}' bulunamadı.", { name }) };
   if (user.id === session.user.id)
     return { ok: false, error: t("Kendini davet edemezsin.") };

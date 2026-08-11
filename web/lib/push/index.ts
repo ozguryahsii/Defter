@@ -1,5 +1,5 @@
 import { prisma } from "../prisma";
-import { apnsConfigured, sendApns } from "./apns";
+import { apnsConfigured, sendApns, sendApnsBadge } from "./apns";
 import { fcmConfigured, sendFcm } from "./fcm";
 
 /**
@@ -69,6 +69,39 @@ export async function sendPushToUser(input: {
     }
   } catch (e) {
     console.error("push: gönderim atlandı", e);
+  }
+}
+
+/**
+ * Görünür bildirim göstermeden yalnızca uygulama simgesi rozetini
+ * günceller — kullanıcı uygulama içinde bildirimleri okuduğunda çağrılır,
+ * aksi halde rozet bir daha push gelene kadar sıkışıp kalır.
+ */
+export async function syncBadgeForUser(userId: string): Promise<void> {
+  if (!apnsConfigured()) return;
+  try {
+    const devices = await prisma.pushDevice.findMany({
+      where: { userId, platform: "ios" },
+      select: { id: true, token: true },
+    });
+    if (devices.length === 0) return;
+
+    const badge = await prisma.notification.count({
+      where: { userId, readAt: null },
+    });
+
+    const dead: string[] = [];
+    await Promise.all(
+      devices.map(async (d) => {
+        const res = await sendApnsBadge({ deviceToken: d.token, badge });
+        if (!res.ok && res.dead) dead.push(d.id);
+      }),
+    );
+    if (dead.length > 0) {
+      await prisma.pushDevice.deleteMany({ where: { id: { in: dead } } });
+    }
+  } catch (e) {
+    console.error("push: rozet güncellenemedi", e);
   }
 }
 

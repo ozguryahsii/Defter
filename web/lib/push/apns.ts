@@ -81,6 +81,43 @@ export function sendApns(input: {
   /** Uygulama açılınca gidilecek yol, ör. /groups/abc */
   path?: string | null;
 }): Promise<ApnsResult> {
+  return sendApnsRaw({
+    deviceToken: input.deviceToken,
+    pushType: "alert",
+    payload: {
+      aps: {
+        alert: { title: input.title, body: input.body ?? "" },
+        sound: "default",
+        ...(input.badge !== undefined ? { badge: input.badge } : {}),
+      },
+      ...(input.path ? { path: input.path } : {}),
+    },
+  });
+}
+
+/**
+ * Görünür bildirim göstermeden yalnızca uygulama simgesindeki rozeti
+ * günceller (ör. kullanıcı uygulama içinde bildirimleri okuduğunda).
+ * "background" push tipi banner/ses tetiklemez, sessizce rozeti değiştirir.
+ */
+export function sendApnsBadge(input: {
+  deviceToken: string;
+  badge: number;
+}): Promise<ApnsResult> {
+  return sendApnsRaw({
+    deviceToken: input.deviceToken,
+    pushType: "background",
+    payload: {
+      aps: { badge: input.badge, "content-available": 1 },
+    },
+  });
+}
+
+function sendApnsRaw(input: {
+  deviceToken: string;
+  pushType: "alert" | "background";
+  payload: Record<string, unknown>;
+}): Promise<ApnsResult> {
   return new Promise((resolve) => {
     let settled = false;
     const done = (r: ApnsResult) => {
@@ -103,22 +140,15 @@ export function sendApns(input: {
       client.close();
     });
 
-    const payload = JSON.stringify({
-      aps: {
-        alert: { title: input.title, body: input.body ?? "" },
-        sound: "default",
-        ...(input.badge !== undefined ? { badge: input.badge } : {}),
-      },
-      ...(input.path ? { path: input.path } : {}),
-    });
+    const payload = JSON.stringify(input.payload);
 
     const req = client.request({
       ":method": "POST",
       ":path": `/3/device/${input.deviceToken}`,
       authorization: `bearer ${authToken()}`,
       "apns-topic": process.env.APNS_BUNDLE_ID!,
-      "apns-push-type": "alert",
-      "apns-priority": "10",
+      "apns-push-type": input.pushType,
+      "apns-priority": input.pushType === "background" ? "5" : "10",
       "content-type": "application/json",
       "content-length": Buffer.byteLength(payload),
     });

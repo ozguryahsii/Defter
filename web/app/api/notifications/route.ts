@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notify } from "@/lib/notify";
 import { getT } from "@/lib/i18n/server";
+import { syncBadgeForUser } from "@/lib/push";
 
 /**
  * Lazy due-date reminders for the personal budget: any future-dated expense
@@ -81,6 +82,10 @@ export async function GET() {
     }),
   ]);
 
+  // Rozeti her yoklamada gerçek sayıyla senkronize et — bu düzeltmeden önce
+  // sıkışmış kalan eski rozet değerlerini de kendiliğinden onarır.
+  void syncBadgeForUser(session.user.id);
+
   return NextResponse.json({ items, unread });
 }
 
@@ -94,6 +99,9 @@ export async function POST() {
     where: { userId: session.user.id, readAt: null },
     data: { readAt: new Date() },
   });
+
+  // Rozeti sessizce sıfırla; aksi halde bir sonraki push'a kadar sıkışır.
+  void syncBadgeForUser(session.user.id);
 
   return NextResponse.json({ ok: true });
 }
