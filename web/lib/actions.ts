@@ -92,9 +92,6 @@ export async function registerUser(
     };
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-  // Yeni kayıtlara 30 gün premium deneme; süre dolunca getEffectivePremium
-  // otomatik free'ye düşürür, ücret alınmaz, yenilenmez.
-  const trialUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   await prisma.user.create({
     data: {
       username: parsed.data.username,
@@ -102,9 +99,6 @@ export async function registerUser(
       email: parsed.data.email,
       displayName: parsed.data.displayName,
       passwordHash,
-      premium: true,
-      premiumUntil: trialUntil,
-      premiumSource: "promo",
     },
   });
 
