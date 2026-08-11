@@ -82,6 +82,10 @@ export async function GET() {
     }),
   ]);
 
+  // Rozeti her yoklamada gerçek sayıyla senkronize et — bu düzeltmeden önce
+  // sıkışmış kalan eski rozet değerlerini de kendiliğinden onarır.
+  void syncBadgeForUser(session.user.id);
+
   return NextResponse.json({ items, unread });
 }
 
