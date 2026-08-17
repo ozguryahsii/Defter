@@ -24,6 +24,11 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
 
+  // OAuth ile (Google/Apple) girişte doldurulur; şifre girişi yoksa
+  // passwordHash kullanılamayan rastgele bir değerle doldurulur.
+  googleId String? @unique
+  appleId  String? @unique
+
   // Ana sayfadaki toplamların gösterileceği para birimi. Gruplar kendi
   // para birimlerini korur; bu yalnızca özet kutularını etkiler.
   displayCurrency String?
