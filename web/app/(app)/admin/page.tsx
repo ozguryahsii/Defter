@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Crown, Search, ShieldCheck, Ticket, Users } from "lucide-react";
+import { Crown, MessageSquare, Search, ShieldCheck, Ticket, Users } from "lucide-react";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import {
   CodeCreateForm,
   CodeActiveToggle,
+  IssueReportStatusToggle,
   PremiumToggle,
 } from "@/components/admin/admin-controls";
 import { getT } from "@/lib/i18n/server";
@@ -33,7 +34,7 @@ export default async function AdminPage({
   dayStart.setHours(0, 0, 0, 0);
   const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
 
-  const [totalUsers, premiumUsers, signupsToday, signupsWeek, codes] =
+  const [totalUsers, premiumUsers, signupsToday, signupsWeek, codes, issueReports] =
     await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { premium: true } }),
@@ -49,6 +50,10 @@ export default async function AdminPage({
             },
           },
         },
+      }),
+      prisma.issueReport.findMany({
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        include: { user: { select: { username: true, email: true } } },
       }),
     ]);
 
@@ -178,6 +183,36 @@ export default async function AdminPage({
                     ))}
                   </ul>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
+      {/* Sorun bildirimleri */}
+      <SectionCard
+        title={t("Sorun Bildirimleri")}
+        description={t("Kullanıcıların gönderdiği geri bildirimler")}
+      >
+        {issueReports.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("Henüz bildirim yok.")}</p>
+        ) : (
+          <ul className="divide-y divide-border/50">
+            {issueReports.map((r) => (
+              <li key={r.id} className="flex items-start gap-3 py-3">
+                <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="whitespace-pre-wrap text-sm">{r.message}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    @{r.user.username}
+                    {r.user.email ? ` · ${r.user.email}` : ""} ·{" "}
+                    {formatDate(r.createdAt)}
+                  </p>
+                </div>
+                <IssueReportStatusToggle
+                  reportId={r.id}
+                  status={r.status as "open" | "done"}
+                />
               </li>
             ))}
           </ul>

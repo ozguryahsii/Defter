@@ -1035,6 +1035,63 @@ export async function changePassword(
   return { ok: true };
 }
 
+/** Kullanıcının "Sorun bildir" formundan gönderdiği geri bildirimi kaydeder ve adminlere e-posta ile bildirir. */
+export async function submitIssueReport(message: string): Promise<ActionState> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, error: t("Oturum bulunamadı.") };
+
+  const trimmed = message.trim();
+  if (trimmed.length < 5)
+    return { ok: false, error: t("Lütfen sorunu biraz daha ayrıntılı anlat.") };
+  if (trimmed.length > 2000)
+    return { ok: false, error: t("Mesaj çok uzun (en fazla 2000 karakter).") };
+
+  const recent = await prisma.issueReport.count({
+    where: { userId: session.user.id, createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) } },
+  });
+  if (recent >= 5)
+    return { ok: false, error: t("Çok sık bildirim gönderildi. Lütfen biraz sonra tekrar dene.") };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true, email: true },
+  });
+
+  await prisma.issueReport.create({
+    data: { userId: session.user.id, message: trimmed },
+  });
+
+  try {
+    const adminUsernames = (process.env.ADMIN_USERNAME ?? "")
+      .split(",")
+      .map((u) => u.trim())
+      .filter(Boolean);
+    if (adminUsernames.length > 0) {
+      const admins = await prisma.user.findMany({
+        where: { username: { in: adminUsernames } },
+        select: { email: true },
+      });
+      const { sendEmail } = await import("./email");
+      const reporter = `@${user?.username ?? "?"}${user?.email ? ` (${user.email})` : ""}`;
+      await Promise.all(
+        admins
+          .filter((a) => a.email)
+          .map((a) =>
+            sendEmail({
+              to: a.email!,
+              subject: `SOBSO — yeni sorun bildirimi (${reporter})`,
+              text: trimmed,
+            }),
+          ),
+      );
+    }
+  } catch (e) {
+    console.error("issue-report: admin e-postası gönderilemedi", e);
+  }
+
+  return { ok: true };
+}
+
 /**
  * Deletes the account (store compliance). Personal data is removed; shared
  * group ledgers stay consistent:
@@ -1802,6 +1859,19 @@ export async function adminCreateCode(input: {
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     },
   });
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Bir sorun bildirimini tamamlandı/açık olarak işaretler. */
+export async function adminSetIssueReportStatus(
+  reportId: string,
+  status: "open" | "done",
+): Promise<ActionState> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: t("Yetkin yok.") };
+
+  await prisma.issueReport.update({ where: { id: reportId }, data: { status } });
   revalidatePath("/admin");
   return { ok: true };
 }

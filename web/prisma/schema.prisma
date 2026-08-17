@@ -61,6 +61,7 @@ model User {
   joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
   codeRedemptions CodeRedemption[]
   pushDevices     PushDevice[]
+  issueReports    IssueReport[]
 }
 
 // A device registered for remote push (one row per app install).
@@ -179,6 +180,20 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+// Kullanıcının "Sorun bildir" formundan gönderdiği geri bildirim.
+model IssueReport {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  status    String   @default("open") // "open" | "done"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model Group {

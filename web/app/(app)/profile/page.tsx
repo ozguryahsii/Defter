@@ -7,6 +7,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { AvatarForm } from "@/components/profile/avatar-form";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
+import { IssueReportForm } from "@/components/profile/issue-report-form";
 import { getT } from "@/lib/i18n/server";
 
 export function generateMetadata(): Metadata {
@@ -62,6 +63,13 @@ export default async function ProfilePage() {
         description={t("Hesap güvenliğin için güçlü bir parola kullan")}
       >
         <ChangePasswordForm />
+      </SectionCard>
+
+      <SectionCard
+        title={t("Sorun Bildir")}
+        description={t("Bir hata mı buldun, bir öneriniz mi var? Doğrudan bize ulaşsın")}
+      >
+        <IssueReportForm />
       </SectionCard>
 
       <DeleteAccountCard />

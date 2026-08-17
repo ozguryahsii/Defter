@@ -7,6 +7,7 @@ import { Crown, Loader2, Plus, Power } from "lucide-react";
 import {
   adminCreateCode,
   adminSetCodeActive,
+  adminSetIssueReportStatus,
   adminSetPremium,
 } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -184,6 +185,43 @@ export function CodeActiveToggle({
     >
       {busy ? <Loader2 className="animate-spin" /> : <Power />}
       {active ? t("Aktif") : t("Pasif")}
+    </Button>
+  );
+}
+
+/** Bir sorun bildirimini tamamlandı/açık olarak işaretler. */
+export function IssueReportStatusToggle({
+  reportId,
+  status,
+}: {
+  reportId: string;
+  status: "open" | "done";
+}) {
+  const router = useRouter();
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  const done = status === "done";
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled={busy}
+      className={done ? "text-success" : "text-muted-foreground"}
+      onClick={async () => {
+        setBusy(true);
+        const res = await adminSetIssueReportStatus(reportId, done ? "open" : "done");
+        setBusy(false);
+        if (!res.ok) {
+          toast.error(t(res.error ?? "İşlem başarısız."));
+          return;
+        }
+        toast.success(done ? t("Yeniden açıldı.") : t("Tamamlandı olarak işaretlendi."));
+        router.refresh();
+      }}
+    >
+      {busy ? <Loader2 className="animate-spin" /> : <Power />}
+      {done ? t("Tamamlandı") : t("Açık")}
     </Button>
   );
 }
