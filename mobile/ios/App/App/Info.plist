@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>SOBSO!</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<!-- Yerel geliştirme (http://localhost:3333 ve Mac'in LAN IP'si) için
+	     dar kapsamlı istisna. NSAllowsArbitraryLoads KULLANILMAZ: o, App
+	     Store incelemesinde gerekçe ister ve reddedilebilir. Buradaki iki
+	     anahtar yalnızca yerel ağı açar, canlı trafik https kalır. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<!-- Fiş tarama: kullanıcı fotoğraf çekmeyi veya galeriden seçmeyi
+	     seçtiğinde iOS bu açıklamaları gösterir. Bunlar olmadan uygulama
+	     gerçek cihazda çöker ve App Store incelemesinden geçmez. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Fişlerini fotoğraflayıp tutarı otomatik doldurmak için kameraya erişim gerekiyor.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kayıtlı fiş fotoğraflarından harcama eklemek için fotoğraflarına erişim gerekiyor.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>SOBSO! finansal verilerinizi korumak için uygulamayı Face ID ile kilitler.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Bildirim rozetini kullanıcı uygulama içinde okuduğunda sessizce
+	     sıfırlamak için (content-available background push) gerekli.
+	     Görünür (alert) push bildirimlerini ETKİLEMEZ, onlar zaten çalışıyordu. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+</dict>
+</plist>

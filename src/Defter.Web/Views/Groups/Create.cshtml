@@ -1,0 +1,30 @@
+@model CreateGroupViewModel
+@{
+    ViewData["Title"] = "Ortak Harcama Oluştur";
+}
+<div class="card narrow">
+    <h1>Ortak Harcama Oluştur</h1>
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="All" class="validation"></div>
+
+        <label asp-for="Name"></label>
+        <input asp-for="Name" autofocus placeholder="Örn. Bodrum Tatili 2026" />
+
+        <label asp-for="Type"></label>
+        <select asp-for="Type">
+            <option value="@((int)GroupType.Tatil)">Tatil / Arkadaş grubu</option>
+            <option value="@((int)GroupType.Girisim)">Ortak girişim</option>
+        </select>
+
+        <label asp-for="Currency"></label>
+        <select asp-for="Currency">
+            <option value="TRY">TRY (₺)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Oluştur</button>
+        <a asp-action="Index" class="btn">Vazgeç</a>
+    </form>
+</div>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Defter</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a class="brand" asp-controller="Home" asp-action="Index">📒 Defter</a>
+            <nav class="nav">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Groups" asp-action="Index">Gruplarım</a>
+                    <span class="who">@User.Identity!.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                        <button type="submit" class="link-btn">Çıkış</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login">Giriş</a>
+                    <a asp-controller="Account" asp-action="Register">Kayıt</a>
+                }
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success">@ok</div>
+        }
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-error">@err</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="footer container">
+        <span>Defter · yerel harcama paylaşım defteri</span>
+    </footer>
+
+    <script src="~/js/app.js" asp-append-version="true" defer></script>
+</body>
+</html>

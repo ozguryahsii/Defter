@@ -1,0 +1,25 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Kayıt";
+}
+<div class="card narrow">
+    <h1>Kayıt ol</h1>
+    <form asp-action="Register" method="post">
+        <div asp-validation-summary="All" class="validation"></div>
+
+        <label asp-for="UserName"></label>
+        <input asp-for="UserName" autocomplete="username" autofocus />
+
+        <label asp-for="DisplayName"></label>
+        <input asp-for="DisplayName" autocomplete="name" />
+
+        <label asp-for="Password"></label>
+        <input asp-for="Password" autocomplete="new-password" />
+
+        <label asp-for="ConfirmPassword"></label>
+        <input asp-for="ConfirmPassword" autocomplete="new-password" />
+
+        <button type="submit" class="btn btn-primary">Kayıt ol</button>
+    </form>
+    <p class="muted">Zaten hesabın var mı? <a asp-action="Login">Giriş yap</a></p>
+</div>

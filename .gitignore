@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+publish/
+*.user
+
+# Rider / VS
+.vs/
+.idea/
+
+# Local SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
+Thumbs.db

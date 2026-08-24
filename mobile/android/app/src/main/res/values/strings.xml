@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SOBSO!</string>
+    <string name="title_activity_main">SOBSO!</string>
+    <string name="package_name">net.sobso.app</string>
+    <string name="custom_url_scheme">net.sobso.app</string>
+</resources>

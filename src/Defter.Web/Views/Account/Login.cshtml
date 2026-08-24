@@ -1,0 +1,23 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Giriş";
+}
+<div class="card narrow">
+    <h1>Giriş</h1>
+    <form asp-action="Login" method="post" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+        <div asp-validation-summary="All" class="validation"></div>
+
+        <label asp-for="UserName"></label>
+        <input asp-for="UserName" autocomplete="username" autofocus />
+
+        <label asp-for="Password"></label>
+        <input asp-for="Password" autocomplete="current-password" />
+
+        <label class="checkbox">
+            <input asp-for="RememberMe" /> <span>Beni hatırla</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary">Giriş yap</button>
+    </form>
+    <p class="muted">Hesabın yok mu? <a asp-action="Register">Kayıt ol</a></p>
+</div>

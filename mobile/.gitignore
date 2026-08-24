@@ -1,0 +1,21 @@
+node_modules/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/DerivedData/
+ios/App/output/
+*.xcuserdatad/
+
+# Android: üretilen web varlıkları ve yerel derleme çıktıları
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+
+# Play Store imza anahtarı ve parolaları — ASLA depoya girmez
+android/keystore.properties
+*.jks
+*.keystore

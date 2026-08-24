@@ -1,0 +1,250 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  ImagePlus,
+  Loader2,
+  Paperclip,
+  Pencil,
+  Receipt,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { attachReceipt, deleteExpense } from "@/lib/actions";
+import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatCurrency, formatDate } from "@/lib/format";
+import {
+  AddExpenseDialog,
+  type EditExpenseInit,
+} from "@/components/groups/add-expense-dialog";
+
+export type ExpenseItem = {
+  id: string;
+  description: string;
+  category: string | null;
+  amount: number;
+  date: string;
+  payerName: string;
+  splitType: string;
+  shareCount: number;
+  kind: string; // "expense" | "income"
+  canDelete: boolean;
+  canEdit: boolean;
+  receiptPath: string | null;
+  original: { amount: number; currency: string } | null;
+  editInit: EditExpenseInit;
+};
+
+type Member = { userId: string; name: string };
+
+export function ExpenseList({
+  items,
+  currency,
+  members,
+  currentUserId,
+  groupId,
+  personal = false,
+}: {
+  items: ExpenseItem[];
+  currency: string;
+  members: Member[];
+  currentUserId: string;
+  groupId: string;
+  personal?: boolean;
+}) {
+  const router = useRouter();
+  const t = useT();
+  const [busy, setBusy] = useState<string | null>(null);
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  async function onDelete(id: string) {
+    if (!window.confirm(t("Bu harcamayı silmek istediğine emin misin?"))) return;
+    setBusy(id);
+    const res = await deleteExpense(id);
+    setBusy(null);
+    if (!res.ok) {
+      toast.error(t(res.error ?? "Silinemedi."));
+      return;
+    }
+    toast.success(t("Harcama silindi."));
+    router.refresh();
+  }
+
+  async function onReceipt(id: string, file: File) {
+    setBusy(id);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await attachReceipt(id, fd);
+    setBusy(null);
+    if (!res.ok) {
+      toast.error(t(res.error ?? "Fiş yüklenemedi."));
+      return;
+    }
+    toast.success(t("Fiş eklendi."));
+    router.refresh();
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-12 text-center">
+        <span className="grid h-12 w-12 place-items-center rounded-xl border border-border/60 bg-secondary/40">
+          <Receipt className="h-5 w-5 text-muted-foreground" />
+        </span>
+        <p className="text-sm text-muted-foreground">
+          {t("Henüz harcama yok. İlk harcamayı ekle.")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-border/60">
+      {items.map((e) => (
+        <li
+          key={e.id}
+          // flex-wrap: metin sütunu dar kalacaksa tutar+butonlar alt satıra
+          // (sağa yaslı) iner; geniş ekranda hepsi tek satırda kalır.
+          className="group flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3 first:pt-0 last:pb-0"
+        >
+          <UserAvatar
+            userId={e.editInit.payerId}
+            name={e.payerName}
+            className="h-10 w-10 shrink-0"
+            fallbackClassName="text-[11px]"
+          />
+
+          <div className="min-w-0 flex-1 basis-52">
+            {/* Açıklama kısaltılmaz; kutunun sonuna kadar yazılır, gerekirse alt satıra sarar */}
+            <p className="break-words text-sm font-medium leading-snug">
+              {e.description}
+            </p>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              {e.category && (
+                <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px]">
+                  {e.category}
+                </Badge>
+              )}
+              {e.receiptPath && (
+                <a
+                  href={`/api/receipts/${e.receiptPath}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-0.5 text-[10px] text-brand hover:underline"
+                >
+                  <Paperclip className="h-3 w-3" /> {t("fiş")}
+                </a>
+              )}
+              <span>
+                {e.kind === "income" ? t("gelir") : t("{name} ödedi", { name: e.payerName })}
+              </span>
+              <span>·</span>
+              <span>{formatDate(e.date)}</span>
+              <span className="hidden items-center gap-1 sm:inline-flex">
+                <span>·</span>
+                <Users className="h-3 w-3" />
+                {t("{n} kişi", { n: e.shareCount })}
+              </span>
+              {e.original && (
+                <>
+                  <span>·</span>
+                  <span>
+                    {formatCurrency(e.original.amount, e.original.currency)}
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+
+          <div className="ml-auto flex items-center gap-0.5">
+            <span
+              className={
+                e.kind === "income"
+                  ? "mr-1 text-sm font-semibold tabular-nums text-success"
+                  : "mr-1 text-sm font-semibold tabular-nums"
+              }
+            >
+              {e.kind === "income" ? "+" : ""}
+              {formatCurrency(e.amount, currency)}
+            </span>
+
+            {e.canEdit && (
+              <>
+                <input
+                  ref={(el) => {
+                    fileInputs.current[e.id] = el;
+                  }}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(ev) => {
+                    const f = ev.target.files?.[0];
+                    if (f) onReceipt(e.id, f);
+                    ev.target.value = "";
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                  onClick={() => fileInputs.current[e.id]?.click()}
+                  disabled={busy === e.id}
+                  aria-label={t("Fiş ekle")}
+                  title={t("Fiş fotoğrafı ekle")}
+                >
+                  {busy === e.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4" />
+                  )}
+                </Button>
+
+                <AddExpenseDialog
+                  groupId={groupId}
+                  currency={currency}
+                  members={members}
+                  currentUserId={currentUserId}
+                  expense={e.editInit}
+                  personal={personal}
+                  mode={e.kind === "income" ? "income" : "expense"}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                      aria-label={t("Düzenle")}
+                      title={t("Düzenle")}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              </>
+            )}
+
+            {e.canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                onClick={() => onDelete(e.id)}
+                disabled={busy === e.id}
+                aria-label={t("Sil")}
+              >
+                {busy === e.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}

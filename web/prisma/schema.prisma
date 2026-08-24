@@ -1,0 +1,344 @@
+// Defter — data model (SQLite via Prisma)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  // Küçük harfe indirgenmiş kullanıcı adı (Unicode farkındalıklı).
+  // SQLite'ın LOWER() işlevi yalnızca ASCII çevirir; "Şükrü" → "şükrü"
+  // yapamadığı için girişte bu alan kullanılır.
+  usernameLower String? @unique
+  displayName  String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  // Required for new sign-ups (existing accounts add it from the profile).
+  // emailVerified will be set once the e-mail OTP flow ships.
+  email         String?   @unique
+  emailVerified DateTime?
+
+  // OAuth ile (Google/Apple) girişte doldurulur; şifre girişi yoksa
+  // passwordHash kullanılamayan rastgele bir değerle doldurulur.
+  googleId String? @unique
+  appleId  String? @unique
+
+  // Ana sayfadaki toplamların gösterileceği para birimi. Gruplar kendi
+  // para birimlerini korur; bu yalnızca özet kutularını etkiler.
+  displayCurrency String?
+
+  // Payment details for settlements (IBAN / QR).
+  iban     String?
+  ibanName String?
+
+  // Profile photo filename (stored on disk next to receipts).
+  avatarPath String?
+
+  // Paid tier. False => free limits (1 group, 3 expenses per owned group).
+  premium       Boolean   @default(false)
+  premiumPlan   String? // "monthly" | "yearly"
+  premiumUntil  DateTime? // subscription end (null => indefinite/manual)
+  premiumSource String? // "appstore" | "playstore" | "promo" | "admin"
+
+  // AI receipt-scan quota: 100 scans per calendar month (premium only).
+  ocrUsed  Int     @default(0)
+  ocrMonth String? // "YYYY-MM" the counter belongs to; differs => reset
+
+  memberships     GroupMember[]
+  paidExpenses    Expense[]          @relation("Payer")
+  shares          ExpenseShare[]
+  settlementsFrom Settlement[]       @relation("SettlementFrom")
+  settlementsTo   Settlement[]       @relation("SettlementTo")
+  activities      Activity[]         @relation("ActivityActor")
+  notifications   Notification[]
+  joinReqsSent    GroupJoinRequest[] @relation("JoinReqFrom")
+  joinReqsGotten  GroupJoinRequest[] @relation("JoinReqTo")
+  codeRedemptions CodeRedemption[]
+  pushDevices     PushDevice[]
+  issueReports    IssueReport[]
+}
+
+// A device registered for remote push (one row per app install).
+model PushDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique // APNs device token (hex) or FCM registration token
+  platform   String // "ios" | "android"
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  // Set when the provider reports the token is dead; row is deleted instead,
+  // this field only exists for debugging a failed cleanup.
+  failedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// 6-digit e-mail codes: signup verification + password reset.
+// Only a hash of the code is stored; codes expire and are attempt-limited.
+model EmailCode {
+  id        String    @id @default(cuid())
+  email     String // lowercase recipient
+  purpose   String // "verify" | "reset"
+  codeHash  String // sha256(code)
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, purpose, createdAt])
+}
+
+// Influencer discount code (e.g. OZGE20 => %20). Managed from /admin.
+model DiscountCode {
+  id         String    @id @default(cuid())
+  code       String    @unique // stored uppercase
+  kind       String    @default("discount") // "discount" | "trial"
+  percent    Int // discount: 1-90 (trial için 0)
+  trialDays  Int? // trial: kaç gün premium verir
+  maxUses    Int? // kontenjan (null => sınırsız)
+  influencer String? // who promotes this code
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  redemptions CodeRedemption[]
+}
+
+// Who entered which code (referral tracking for the admin panel).
+model CodeRedemption {
+  id        String   @id @default(cuid())
+  codeId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  code DiscountCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([codeId, userId])
+  @@index([codeId, createdAt])
+}
+
+// Daily-refreshed exchange-rate table (USD base, single row).
+model FxCache {
+  id        Int      @id
+  rates     String // JSON: { "TRY": 41.2, "EUR": 0.92, ... }
+  fetchedAt DateTime
+}
+
+// Consent-based membership: adding someone creates a request they must accept.
+model GroupJoinRequest {
+  id          String    @id @default(cuid())
+  groupId     String
+  fromUserId  String // who wants to add
+  toUserId    String // who must consent
+  status      String    @default("pending") // "pending" | "accepted" | "rejected"
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  from  User  @relation("JoinReqFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  to    User  @relation("JoinReqTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([toUserId, status])
+  @@index([fromUserId, toUserId, status])
+}
+
+// Anti-harassment penalty: blocker (the rejecter) shields themselves from
+// the blocked user's group-add requests — 24h first, permanent on repeat.
+model UserAddBlock {
+  id        String    @id @default(cuid())
+  blockerId String // who rejected
+  blockedId String // who is penalised
+  permanent Boolean   @default(false)
+  until     DateTime? // 24h expiry when not permanent
+  createdAt DateTime  @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+// In-app notification (push delivery will reuse these rows later).
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String // recipient
+  type      String // "expense.add" | "settle" | "member.add" | "payment.reminder" | "payment.due" | ...
+  title     String
+  body      String?
+  groupId   String? // deep-link target, if any
+  meta      String? // optional JSON (rate-limit keys etc.)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
+
+// Kullanıcının "Sorun bildir" formundan gönderdiği geri bildirim.
+model IssueReport {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  status    String   @default("open") // "open" | "done"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  name        String
+  type        String    @default("Tatil") // "Tatil" | "Kisisel" (kişisel bütçe)
+  currency    String    @default("TRY")
+  createdById String
+  createdAt   DateTime  @default(now())
+  archivedAt  DateTime? // set => read-only archive
+
+  // Optional monthly spending budget for the group.
+  monthlyBudget Float?
+
+  members      GroupMember[]
+  expenses     Expense[]
+  settlements  Settlement[]
+  invites      Invite[]
+  joinRequests GroupJoinRequest[]
+  activities   Activity[]
+  recurring   RecurringExpense[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  // Ownership ratio for "Girisim" (venture) groups. Null => treated as equal.
+  shareRatio Float?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  groupId     String
+  payerId     String
+  amount      Float // amount in the group's currency
+  description String
+  category    String?
+  date        DateTime @default(now())
+  kind        String   @default("expense") // "expense" | "income" (income: personal budget only)
+  splitType   String   @default("Equal") // "Equal" | "Exact"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Receipt photo (stored on disk, served via authenticated API route).
+  receiptPath String?
+
+  // Multi-currency: what was originally entered, converted to group currency.
+  originalAmount   Float?
+  originalCurrency String?
+  fxRate           Float? // multiply original by this to get group currency
+
+  // Link back to the recurring template that produced this expense, if any.
+  recurringId String?
+
+  group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payer  User           @relation("Payer", fields: [payerId], references: [id])
+  shares ExpenseShare[]
+}
+
+model ExpenseShare {
+  id        String @id @default(cuid())
+  expenseId String
+  userId    String
+  amount    Float
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+// A confirmed payment from a debtor to a creditor. Recording one reduces the
+// outstanding debt in the balance math. Only the creditor (toUser) may create
+// or undo it.
+model Settlement {
+  id            String   @id @default(cuid())
+  groupId       String
+  fromUserId    String // debtor who pays
+  toUserId      String // creditor who receives + confirms
+  amount        Float
+  method        String? // "IBAN" | "Nakit" | "Diğer"
+  note          String?
+  confirmedById String // who marked it paid — always the creditor (toUserId)
+  createdAt     DateTime @default(now())
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  toUser   User  @relation("SettlementTo", fields: [toUserId], references: [id])
+
+  @@index([groupId])
+}
+
+// Group activity feed + audit log (one row per meaningful action).
+model Activity {
+  id        String   @id @default(cuid())
+  groupId   String
+  actorId   String
+  type      String // "expense.add" | "expense.edit" | "expense.delete" | "settle" | "unsettle" | "member.add" | "member.join" | "group.create" | "budget.set" | "recurring.add" | "recurring.run"
+  summary   String
+  meta      String? // optional JSON payload
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  actor User  @relation("ActivityActor", fields: [actorId], references: [id])
+
+  @@index([groupId, createdAt])
+}
+
+// Shareable invite link to join a group without knowing the exact username.
+model Invite {
+  id          String    @id @default(cuid())
+  groupId     String
+  token       String    @unique
+  createdById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  maxUses     Int?
+  uses        Int       @default(0)
+  active      Boolean   @default(true)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// Template for a recurring expense; occurrences are materialized lazily.
+model RecurringExpense {
+  id             String   @id @default(cuid())
+  groupId        String
+  description    String
+  category       String?
+  amount         Float
+  payerId        String
+  splitType      String   @default("Equal")
+  participantIds String // JSON array of userIds
+  interval       String // "weekly" | "monthly"
+  nextRunAt      DateTime
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}

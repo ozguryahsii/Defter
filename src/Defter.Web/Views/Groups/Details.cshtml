@@ -1,0 +1,132 @@
+@model GroupDetailsViewModel
+@{
+    ViewData["Title"] = Model.Group.Name;
+    var g = Model.Group;
+    var cur = g.Currency;
+    var isOwner = g.CreatedByUserId == Model.CurrentUserId;
+    string Name(string userId) => g.Members.FirstOrDefault(m => m.UserId == userId)?.User.UserName ?? "?";
+}
+
+<div class="page-head">
+    <div>
+        <h1>@g.Name</h1>
+        <div class="badges">
+            <span class="badge">@(g.Type == GroupType.Tatil ? "Tatil" : "Girişim")</span>
+            <span class="badge">@cur</span>
+        </div>
+    </div>
+    <a class="btn btn-primary" asp-controller="Expenses" asp-action="Create" asp-route-groupId="@g.Id">+ Harcama Ekle</a>
+</div>
+
+<div class="columns">
+    <section class="col">
+        <div class="card">
+            <h2>Borç Durumu</h2>
+            <p class="muted small">Her harcama sonrası otomatik güncellenir.</p>
+
+            @if (Model.Settlement.Transfers.Count == 0)
+            {
+                <p class="settled">✅ Herkes ödeşmiş — bekleyen borç yok.</p>
+            }
+            else
+            {
+                <ul class="transfers">
+                    @foreach (var t in Model.Settlement.Transfers)
+                    {
+                        <li>
+                            <span class="from">@t.FromUserName</span>
+                            <span class="arrow">→</span>
+                            <span class="to">@t.ToUserName</span>
+                            <span class="amt">@t.Amount.ToString("N2") @cur</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <h3>Net Bakiyeler</h3>
+            <table class="table">
+                <thead><tr><th>Üye</th><th class="r">Bakiye</th></tr></thead>
+                <tbody>
+                @foreach (var b in Model.Settlement.Balances)
+                {
+                    var cls = b.Amount > 0.005m ? "pos" : (b.Amount < -0.005m ? "neg" : "zero");
+                    <tr>
+                        <td>@b.UserName</td>
+                        <td class="r @cls">@b.Amount.ToString("N2") @cur</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            <p class="muted small">Pozitif = alacaklı, negatif = borçlu.</p>
+        </div>
+
+        <div class="card">
+            <h2>Üyeler (@g.Members.Count)</h2>
+            <ul class="members">
+                @foreach (var m in g.Members.OrderBy(x => x.User.UserName))
+                {
+                    <li>
+                        <span>@m.User.UserName @(m.UserId == g.CreatedByUserId ? "(sahip)" : "")</span>
+                        @if (isOwner && m.UserId != g.CreatedByUserId)
+                        {
+                            <form asp-action="RemoveMember" method="post" class="inline"
+                                  data-confirm="Üye çıkarılsın mı?">
+                                <input type="hidden" name="groupId" value="@g.Id" />
+                                <input type="hidden" name="userId" value="@m.UserId" />
+                                <button type="submit" class="link-btn danger">çıkar</button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+
+            <form asp-action="AddMember" method="post" class="add-member">
+                <input type="hidden" name="groupId" value="@g.Id" />
+                <input type="text" name="newMemberUserName" placeholder="kullanıcı adı" />
+                <button type="submit" class="btn">Üye Ekle</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="col">
+        <div class="card">
+            <h2>Harcamalar (@g.Expenses.Count)</h2>
+            @if (g.Expenses.Count == 0)
+            {
+                <p class="muted">Henüz harcama girilmedi.</p>
+            }
+            else
+            {
+                <ul class="expenses">
+                    @foreach (var e in g.Expenses.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id))
+                    {
+                        <li>
+                            <div class="exp-main">
+                                <div class="exp-desc">
+                                    @e.Description
+                                    @if (!string.IsNullOrEmpty(e.Category)) { <span class="badge small">@e.Category</span> }
+                                </div>
+                                <div class="exp-amt">@e.Amount.ToString("N2") @cur</div>
+                            </div>
+                            <div class="exp-meta muted small">
+                                @Name(e.PayerUserId) ödedi · @e.Date.ToString("dd.MM.yyyy") ·
+                                @(e.SplitType == SplitType.Equal ? "eşit" : "özel") ·
+                                @e.Shares.Count kişi
+                                @if (e.PayerUserId == Model.CurrentUserId || isOwner)
+                                {
+                                    <form asp-controller="Expenses" asp-action="Delete" method="post" class="inline"
+                                          data-confirm="Harcama silinsin mi?">
+                                        <input type="hidden" name="id" value="@e.Id" />
+                                        <button type="submit" class="link-btn danger">sil</button>
+                                    </form>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+</div>
+
+<p><a asp-action="Index">← Gruplarım</a></p>

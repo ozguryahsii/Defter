@@ -1,0 +1,81 @@
+"use client";
+
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+import { Crown, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/user-avatar";
+import { useT } from "@/components/i18n-provider";
+
+export function UserMenu({
+  userId,
+  name,
+  username,
+  avatarVersion,
+  isAdmin = false,
+}: {
+  userId: string;
+  name: string;
+  username: string;
+  avatarVersion?: string | null;
+  isAdmin?: boolean;
+}) {
+  const t = useT();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none ring-ring transition focus-visible:ring-2">
+        <UserAvatar
+          userId={userId}
+          name={name}
+          version={avatarVersion}
+          className="h-9 w-9 ring-2 ring-border/60"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-foreground">{name}</span>
+            <span className="text-xs text-muted-foreground">@{username}</span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile">
+            <UserRound /> {t("Profil")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/premium">
+            <Crown /> {t("Premium")}
+          </Link>
+        </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck /> {t("Yönetim")}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            // redirect:false + kendi yönlendirmemiz: NextAuth'un mutlak URL
+            // (NEXTAUTH_URL/localhost) yönlendirmesi mobil/canlıda kırılıyordu.
+            await signOut({ redirect: false });
+            window.location.assign("/login");
+          }}
+          className="text-destructive focus:text-destructive [&_svg]:text-destructive"
+        >
+          <LogOut /> {t("Çıkış yap")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

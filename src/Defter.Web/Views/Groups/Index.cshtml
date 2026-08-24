@@ -1,0 +1,31 @@
+@model List<ExpenseGroup>
+@{
+    ViewData["Title"] = "Gruplarım";
+}
+<div class="page-head">
+    <h1>Ortak Harcamalar</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Ortak Harcama Oluştur</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card">
+        <p>Henüz bir grubun yok. Bir tatil ya da ortak girişim için “Ortak Harcama Oluştur” diyerek başla.</p>
+    </div>
+}
+else
+{
+    <div class="grid">
+        @foreach (var g in Model)
+        {
+            <a class="card group-card" asp-action="Details" asp-route-id="@g.Id">
+                <div class="group-title">@g.Name</div>
+                <div class="badges">
+                    <span class="badge">@(g.Type == GroupType.Tatil ? "Tatil" : "Girişim")</span>
+                    <span class="badge">@g.Currency</span>
+                    <span class="badge">@g.Members.Count üye</span>
+                </div>
+            </a>
+        }
+    </div>
+}

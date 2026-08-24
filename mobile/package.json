@@ -1,0 +1,28 @@
+{
+  "name": "sobso-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SOBSO! iOS/Android kabuğu (Capacitor)",
+  "scripts": {
+    "sync": "cap sync",
+    "ios": "cap run ios",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "android": "cap run android",
+    "sync:android": "cap sync android",
+    "build:aab": "cd android && ./gradlew bundleRelease",
+    "build:apk": "cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/local-notifications": "^8.2.1",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@revenuecat/purchases-capacitor": "^13.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
